@@ -1,8 +1,7 @@
-// src/pages/Login.tsx
 import { useState } from "react"
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
 import { auth } from "../../lib/firebase"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 export default function Login() {
   const navigate = useNavigate()
@@ -11,13 +10,14 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const onEmailLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
+
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      navigate("/planner") // change to wherever you want after login
+      navigate("/planner")
     } catch (err: any) {
       setError(err?.message ?? "Login failed.")
     } finally {
@@ -25,15 +25,16 @@ export default function Login() {
     }
   }
 
-  const onGoogleLogin = async () => {
+  const handleGoogle = async () => {
     setError(null)
     setLoading(true)
+
     try {
       const provider = new GoogleAuthProvider()
       await signInWithPopup(auth, provider)
       navigate("/planner")
     } catch (err: any) {
-      setError(err?.message ?? "Google login failed.")
+      setError(err?.message ?? "Google sign-in failed.")
     } finally {
       setLoading(false)
     }
@@ -41,47 +42,37 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-slate-800 p-6 shadow-lg">
+      <div className="w-full max-w-md bg-slate-800 p-6 rounded-2xl shadow-lg">
         <h1 className="text-2xl font-bold text-white">Login</h1>
-        <p className="text-slate-300 mt-1">Sign in to your course planner.</p>
 
-        {error && (
-          <div className="mt-4 rounded-lg bg-red-500/10 border border-red-500/30 p-3 text-red-200 text-sm">
-            {error}
-          </div>
-        )}
+        {error && <div className="mt-4 text-sm text-red-400">{error}</div>}
 
-        <form onSubmit={onEmailLogin} className="mt-6 space-y-4">
-          <div>
-            <label className="block text-sm text-slate-200 mb-1">Email</label>
-            <input
-              className="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-white outline-none focus:border-slate-400"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@uwaterloo.ca"
-              required
-            />
-          </div>
+        <form onSubmit={handleLogin} className="mt-6 space-y-4">
+          <input
+            type="email"
+            placeholder="Email"
+            className="w-full p-2 rounded bg-slate-900 text-white border border-slate-700"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="off"
+            required
+          />
 
-          <div>
-            <label className="block text-sm text-slate-200 mb-1">Password</label>
-            <input
-              className="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-white outline-none focus:border-slate-400"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-            />
-          </div>
+          <input
+            type="password"
+            placeholder="Password"
+            className="w-full p-2 rounded bg-slate-900 text-white border border-slate-700"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
 
           <button
+            className="w-full bg-white text-slate-900 font-semibold py-2 rounded hover:opacity-90 disabled:opacity-60"
             disabled={loading}
-            className="w-full rounded-lg bg-white text-slate-900 font-semibold py-2 hover:opacity-90 disabled:opacity-60"
             type="submit"
           >
-            {loading ? "Signing in..." : "Sign in"}
+            {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
 
@@ -92,13 +83,20 @@ export default function Login() {
         </div>
 
         <button
-          onClick={onGoogleLogin}
+          onClick={handleGoogle}
+          className="w-full border border-slate-600 text-white font-semibold py-2 rounded hover:bg-slate-700 disabled:opacity-60"
           disabled={loading}
-          className="w-full rounded-lg border border-slate-600 text-white py-2 hover:bg-slate-700 disabled:opacity-60"
           type="button"
         >
           Continue with Google
         </button>
+
+        <p className="mt-6 text-sm text-slate-400 text-center">
+          Don't have an account?{" "}
+          <Link to="/register" className="text-white underline">
+            Register here
+          </Link>
+        </p>
       </div>
     </div>
   )
