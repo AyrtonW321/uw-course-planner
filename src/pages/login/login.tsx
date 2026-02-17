@@ -1,5 +1,12 @@
 import { useState } from "react"
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
+import {
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+} from "firebase/auth"
 import { auth } from "../../lib/firebase"
 import { Link, useNavigate } from "react-router-dom"
 
@@ -9,6 +16,7 @@ export default function Login() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -16,8 +24,13 @@ export default function Login() {
     setLoading(true)
 
     try {
+      await setPersistence(
+        auth,
+        rememberMe ? browserLocalPersistence : browserSessionPersistence
+      )
+
       await signInWithEmailAndPassword(auth, email, password)
-      navigate("/planner")
+      navigate("/app")
     } catch (err: any) {
       setError(err?.message ?? "Login failed.")
     } finally {
@@ -30,9 +43,14 @@ export default function Login() {
     setLoading(true)
 
     try {
+      await setPersistence(
+        auth,
+        rememberMe ? browserLocalPersistence : browserSessionPersistence
+      )
+
       const provider = new GoogleAuthProvider()
       await signInWithPopup(auth, provider)
-      navigate("/planner")
+      navigate("/app")
     } catch (err: any) {
       setError(err?.message ?? "Google sign-in failed.")
     } finally {
@@ -54,7 +72,7 @@ export default function Login() {
             className="w-full p-2 rounded bg-slate-900 text-white border border-slate-700"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            autoComplete="off"
+            autoComplete="email"
             required
           />
 
@@ -64,8 +82,19 @@ export default function Login() {
             className="w-full p-2 rounded bg-slate-900 text-white border border-slate-700"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
             required
           />
+
+          <label className="flex items-center gap-2 text-sm text-slate-200">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              disabled={loading}
+            />
+            Remember me
+          </label>
 
           <button
             className="w-full bg-white text-slate-900 font-semibold py-2 rounded hover:opacity-90 disabled:opacity-60"
