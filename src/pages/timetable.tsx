@@ -1,11 +1,6 @@
 import { useMemo } from "react"
 import { Link } from "react-router-dom"
-import {
-  DAY_LABELS,
-  formatTime,
-  getSection,
-  type SectionType,
-} from "../lib/courses"
+import { DAY_LABELS, formatTime } from "../lib/courses"
 import { useTimetable } from "../lib/timetable"
 import { glassCard, goldButton } from "../lib/ui"
 
@@ -23,45 +18,42 @@ const PALETTE = [
   { bg: "rgba(251,146,60,0.14)", border: "rgba(251,146,60,0.55)", text: "#fed7aa" },
 ]
 
-type Event = {
-  sectionId: string
+type Color = (typeof PALETTE)[number]
+
+type CalEvent = {
+  key: string
   code: string
-  type: SectionType
-  section: string
+  type: string
   day: number
   start: number
   end: number
   location: string
-  color: (typeof PALETTE)[number]
+  color: Color
 }
 
 const HOURS = Array.from({ length: (END - START) / 60 + 1 }, (_, i) => START / 60 + i)
 
 export default function TimetablePage() {
-  const { sectionIds, loading, remove } = useTimetable()
+  const { entries, loading, remove } = useTimetable()
 
   const { events, courses, totalHours } = useMemo(() => {
-    const colorByCode = new Map<string, (typeof PALETTE)[number]>()
-    const courseList: { code: string; name: string; sectionId: string; color: (typeof PALETTE)[number] }[] = []
-    const evts: Event[] = []
+    const colorByCode = new Map<string, Color>()
+    const courseList: { sectionId: string; code: string; title: string; color: Color }[] = []
+    const evts: CalEvent[] = []
     let minutes = 0
 
-    for (const id of sectionIds) {
-      const found = getSection(id)
-      if (!found) continue
-      const { course, section } = found
-      if (!colorByCode.has(course.code)) {
-        colorByCode.set(course.code, PALETTE[colorByCode.size % PALETTE.length])
+    for (const e of entries) {
+      if (!colorByCode.has(e.code)) {
+        colorByCode.set(e.code, PALETTE[colorByCode.size % PALETTE.length])
       }
-      const color = colorByCode.get(course.code)!
-      courseList.push({ code: course.code, name: course.name, sectionId: id, color })
+      const color = colorByCode.get(e.code)!
+      courseList.push({ sectionId: e.sectionId, code: e.code, title: e.title, color })
 
-      for (const m of section.meetings) {
+      for (const m of e.meetings) {
         evts.push({
-          sectionId: id,
-          code: course.code,
-          type: section.type,
-          section: section.section,
+          key: `${e.sectionId}-${m.day}-${m.start}`,
+          code: e.code,
+          type: e.type,
           day: m.day,
           start: m.start,
           end: m.end,
@@ -72,7 +64,7 @@ export default function TimetablePage() {
       }
     }
     return { events: evts, courses: courseList, totalHours: minutes / 60 }
-  }, [sectionIds])
+  }, [entries])
 
   if (loading) {
     return (
@@ -129,7 +121,6 @@ export default function TimetablePage() {
             {/* Day columns */}
             {DAY_LABELS.map((_, dayIndex) => (
               <div key={dayIndex} className="relative border-l border-white/[0.05]">
-                {/* Hour gridlines */}
                 {HOURS.map((h) => (
                   <div
                     key={h}
@@ -138,7 +129,6 @@ export default function TimetablePage() {
                   />
                 ))}
 
-                {/* Events */}
                 {events
                   .filter((e) => e.day === dayIndex)
                   .map((e) => {
@@ -146,20 +136,17 @@ export default function TimetablePage() {
                     const height = (e.end - e.start) * PX_PER_MIN
                     return (
                       <div
-                        key={e.sectionId + e.day + e.start}
+                        key={e.key}
                         className="absolute left-0.5 right-0.5 overflow-hidden rounded-md border px-1.5 py-1 backdrop-blur-sm"
-                        style={{
-                          top,
-                          height,
-                          backgroundColor: e.color.bg,
-                          borderColor: e.color.border,
-                        }}
-                        title={`${e.code} ${e.section} · ${e.location}`}
+                        style={{ top, height, backgroundColor: e.color.bg, borderColor: e.color.border }}
+                        title={`${e.code} · ${e.location}`}
                       >
                         <p className="truncate text-[11px] font-bold" style={{ color: e.color.text }}>
                           {e.code}
                         </p>
-                        <p className="truncate text-[9px] text-zinc-400">{e.type} · {e.location}</p>
+                        <p className="truncate text-[9px] text-zinc-400">
+                          {e.type} · {e.location}
+                        </p>
                         {height > 38 && (
                           <p className="truncate text-[9px] text-zinc-500">
                             {formatTime(e.start)}–{formatTime(e.end)}
@@ -173,7 +160,7 @@ export default function TimetablePage() {
           </div>
         </div>
 
-        {/* Sidebar: enrolled courses */}
+        {/* Sidebar */}
         <div className="space-y-4">
           <div className={`${glassCard} p-5`}>
             <h2 className="mb-3 text-sm font-semibold text-white">Your Courses</h2>
@@ -198,7 +185,7 @@ export default function TimetablePage() {
                     />
                     <div className="min-w-0 flex-1">
                       <p className="font-mono text-xs font-bold text-white">{c.code}</p>
-                      <p className="truncate text-[11px] text-zinc-500">{c.name}</p>
+                      <p className="truncate text-[11px] text-zinc-500">{c.title}</p>
                     </div>
                     <button
                       onClick={() => remove(c.sectionId)}
