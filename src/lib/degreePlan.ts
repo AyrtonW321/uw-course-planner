@@ -1,0 +1,88 @@
+import { useCallback, useEffect, useState } from "react"
+import { doc, getDoc, setDoc } from "firebase/firestore"
+import { db } from "./firebase"
+import { useAuthUser } from "./useAuthUser"
+
+export type PlannedCourse = {
+  code: string
+  name: string
+}
+
+/** Map of term id ("1A", "1B", "2A"…) → planned courses for that term. */
+export type DegreePlan = Record<string, PlannedCourse[]>
+
+/** Academic terms grouped by year. Co-op work terms are planned elsewhere. */
+export const PLAN_YEARS: { year: number; terms: { id: string; label: string }[] }[] = [
+  { year: 1, terms: [{ id: "1A", label: "1A" }, { id: "1B", label: "1B" }] },
+  { year: 2, terms: [{ id: "2A", label: "2A" }, { id: "2B", label: "2B" }] },
+  { year: 3, terms: [{ id: "3A", label: "3A" }, { id: "3B", label: "3B" }] },
+  { year: 4, terms: [{ id: "4A", label: "4A" }, { id: "4B", label: "4B" }] },
+]
+
+export const ALL_TERM_IDS = PLAN_YEARS.flatMap((y) => y.terms.map((t) => t.id))
+
+export function useDegreePlan() {
+  const { user, loading: authLoading } = useAuthUser()
+  const [plan, setPlan] = useState<DegreePlan>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    if (authLoading) return
+    if (!user) {
+      setPlan({})
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    getDoc(doc(db, "users", user.uid))
+      .then((snap) => {
+        if (!active) return
+        const data = snap.data() as { degreePlan?: DegreePlan } | undefined
+        setPlan(data?.degreePlan ?? {})
+      })
+      .catch(() => active && setPlan({}))
+      .finally(() => active && setLoading(false))
+    return () => {
+      active = false
+    }
+  }, [user, authLoading])
+
+  const save = useCallback(
+    (next: DegreePlan) => {
+      setPlan(next)
+      if (user) {
+        setDoc(doc(db, "users", user.uid), { degreePlan: next }, { merge: true })
+      }
+    },
+    [user]
+  )
+
+  const addCourse = useCallback(
+    (termId: string, course: PlannedCourse) => {
+      setPlan((prev) => {
+        const list = prev[termId] ?? []
+        if (list.some((c) => c.code === course.code)) return prev
+        const next = { ...prev, [termId]: [...list, course] }
+        if (user) setDoc(doc(db, "users", user.uid), { degreePlan: next }, { merge: true })
+        return next
+      })
+    },
+    [user]
+  )
+
+  const removeCourse = useCallback(
+    (termId: string, code: string) => {
+      setPlan((prev) => {
+        const next = { ...prev, [termId]: (prev[termId] ?? []).filter((c) => c.code !== code) }
+        if (user) setDoc(doc(db, "users", user.uid), { degreePlan: next }, { merge: true })
+        return next
+      })
+    },
+    [user]
+  )
+
+  const totalCourses = Object.values(plan).reduce((n, list) => n + list.length, 0)
+
+  return { plan, loading: authLoading || loading, addCourse, removeCourse, save, totalCourses }
+}

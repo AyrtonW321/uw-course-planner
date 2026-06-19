@@ -8,6 +8,7 @@ import ProfilePage from "./pages/profilepage"
 import TimetablePage from "./pages/timetable"
 import CoursesPage from "./pages/courses"
 import CourseInfoPage from "./pages/courseinfo"
+import DegreePlannerPage from "./pages/degreeplanner"
 import Onboarding from "./pages/login/onboarding"
 
 
@@ -27,6 +28,7 @@ export default function App() {
         <Route index element={<Dashboard />} />
         <Route path="courses" element={<CoursesPage />} />
         <Route path="courses/:code" element={<CourseInfoPage />} />
+        <Route path="planner" element={<DegreePlannerPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="timetable" element={<TimetablePage />} />
       </Route>
