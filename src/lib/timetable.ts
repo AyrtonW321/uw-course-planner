@@ -16,6 +16,8 @@ export type TimetableEntry = {
   type: SectionType
   section: string
   termCode: string
+  /** Academic term this entry belongs to (e.g. "1A"), for per-term timetables. */
+  term?: string
   instructor: string
   meetings: Meeting[]
 }

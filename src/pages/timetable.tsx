@@ -1,7 +1,9 @@
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { DAY_LABELS, formatTime } from "../lib/courses"
 import { useTimetable } from "../lib/timetable"
+import { ALL_TERM_IDS } from "../lib/degreePlan"
+import SelectMenu from "../components/SelectMenu"
 import { glassCard, goldButton } from "../lib/ui"
 
 const START = 8 * 60 // 8:00am
@@ -35,6 +37,23 @@ const HOURS = Array.from({ length: (END - START) / 60 + 1 }, (_, i) => START / 6
 
 export default function TimetablePage() {
   const { entries, loading, remove } = useTimetable()
+  const [term, setTerm] = useState("1A")
+
+  // Default to the first term that actually has entries.
+  useEffect(() => {
+    if (entries.length === 0) return
+    const present = new Set(entries.map((e) => e.term ?? "1A"))
+    if (!present.has(term)) {
+      const first = ALL_TERM_IDS.find((t) => present.has(t))
+      if (first) setTerm(first)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries])
+
+  const termEntries = useMemo(
+    () => entries.filter((e) => (e.term ?? "1A") === term),
+    [entries, term]
+  )
 
   const { events, courses, totalHours } = useMemo(() => {
     const colorByCode = new Map<string, Color>()
@@ -42,7 +61,7 @@ export default function TimetablePage() {
     const evts: CalEvent[] = []
     let minutes = 0
 
-    for (const e of entries) {
+    for (const e of termEntries) {
       if (!colorByCode.has(e.code)) {
         colorByCode.set(e.code, PALETTE[colorByCode.size % PALETTE.length])
       }
@@ -64,7 +83,7 @@ export default function TimetablePage() {
       }
     }
     return { events: evts, courses: courseList, totalHours: minutes / 60 }
-  }, [entries])
+  }, [termEntries])
 
   if (loading) {
     return (
@@ -81,13 +100,18 @@ export default function TimetablePage() {
           <h1 className="text-2xl font-bold tracking-tight text-white">Your Timetable</h1>
           <p className="mt-1 text-sm text-zinc-500">
             {totalHours > 0
-              ? `${totalHours.toFixed(1)} hours of class this week`
-              : "No courses added yet"}
+              ? `${totalHours.toFixed(1)} hours of class in ${term}`
+              : `No courses in ${term}`}
           </p>
         </div>
-        <Link to="/app/courses" className={`${goldButton} px-4 py-2 text-sm`}>
-          + Add courses
-        </Link>
+        <div className="flex items-end gap-2">
+          <div className="w-24">
+            <SelectMenu label="Term" value={term} options={[...ALL_TERM_IDS]} onChange={setTerm} />
+          </div>
+          <Link to="/app/courses" className={`${goldButton} px-4 py-2.5 text-sm`}>
+            + Add courses
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_260px]">
