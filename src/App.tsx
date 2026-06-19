@@ -8,7 +8,10 @@ import ProfilePage from "./pages/profilepage"
 import TimetablePage from "./pages/timetable"
 import CoursesPage from "./pages/courses"
 import CourseInfoPage from "./pages/courseinfo"
-import DegreePlannerPage from "./pages/degreeplanner"
+import PlannerLayout from "./pages/planner/PlannerLayout"
+import PlannerTerms from "./pages/planner/terms"
+import MyDegree from "./pages/planner/mydegree"
+import CoopPage from "./pages/planner/coop"
 import Onboarding from "./pages/login/onboarding"
 
 
@@ -28,7 +31,11 @@ export default function App() {
         <Route index element={<Dashboard />} />
         <Route path="courses" element={<CoursesPage />} />
         <Route path="courses/:code" element={<CourseInfoPage />} />
-        <Route path="planner" element={<DegreePlannerPage />} />
+        <Route path="planner" element={<PlannerLayout />}>
+          <Route index element={<PlannerTerms />} />
+          <Route path="degree" element={<MyDegree />} />
+          <Route path="coop" element={<CoopPage />} />
+        </Route>
         <Route path="profile" element={<ProfilePage />} />
         <Route path="timetable" element={<TimetablePage />} />
       </Route>
