@@ -6,56 +6,58 @@ import {
 } from "firebase/auth"
 import { auth } from "../../lib/firebase"
 import { Link, useNavigate } from "react-router-dom"
+import ConstellationCanvas from "../../components/ConstellationCanvas"
 
 type RuleState = "neutral" | "valid" | "invalid"
-
-type Rule = {
-  id: string
-  label: string
-  state: RuleState
-}
+type Rule = { id: string; label: string; state: RuleState }
 
 const MIN_LEN = 8
 const MAX_LEN = 12
-const SPECIAL_RE = /[^A-Za-z0-9]/ // any non-alphanumeric
+const SPECIAL_RE = /[^A-Za-z0-9]/
+
+function GoogleIcon() {
+  return (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+    </svg>
+  )
+}
+
+function EyeIcon({ open }: { open: boolean }) {
+  return open ? (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  ) : (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  )
+}
 
 export default function Register() {
   const navigate = useNavigate()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const rules: Rule[] = useMemo(() => {
     const lengthValid = password.length >= MIN_LEN && password.length <= MAX_LEN
     const lengthTooLong = password.length > MAX_LEN
-
     return [
-      {
-        id: "length",
-        label: `${MIN_LEN}–${MAX_LEN} characters`,
-        state: lengthValid ? "valid" : lengthTooLong ? "invalid" : "neutral",
-      },
-      {
-        id: "upper",
-        label: "At least 1 uppercase letter (A–Z)",
-        state: /[A-Z]/.test(password) ? "valid" : "neutral",
-      },
-      {
-        id: "lower",
-        label: "At least 1 lowercase letter (a–z)",
-        state: /[a-z]/.test(password) ? "valid" : "neutral",
-      },
-      {
-        id: "number",
-        label: "At least 1 number (0–9)",
-        state: /[0-9]/.test(password) ? "valid" : "neutral",
-      },
-      {
-        id: "special",
-        label: "At least 1 special character",
-        state: SPECIAL_RE.test(password) ? "valid" : "neutral",
-      },
+      { id: "length", label: `${MIN_LEN}–${MAX_LEN} characters`, state: lengthValid ? "valid" : lengthTooLong ? "invalid" : "neutral" },
+      { id: "upper", label: "At least 1 uppercase letter (A–Z)", state: /[A-Z]/.test(password) ? "valid" : "neutral" },
+      { id: "lower", label: "At least 1 lowercase letter (a–z)", state: /[a-z]/.test(password) ? "valid" : "neutral" },
+      { id: "number", label: "At least 1 number (0–9)", state: /[0-9]/.test(password) ? "valid" : "neutral" },
+      { id: "special", label: "At least 1 special character", state: SPECIAL_RE.test(password) ? "valid" : "neutral" },
     ]
   }, [password])
 
@@ -73,7 +75,6 @@ export default function Register() {
     e.preventDefault()
     setError(null)
     if (!isPasswordValid) return
-
     setLoading(true)
     try {
       await createUserWithEmailAndPassword(auth, email, password)
@@ -99,110 +100,157 @@ export default function Register() {
     }
   }
 
-  const ruleTextClass = (state: RuleState) => {
-    if (state === "valid") return "text-green-300"
+  const ruleClass = (state: RuleState) => {
+    if (state === "valid") return "text-yellow-400"
     if (state === "invalid") return "text-red-400"
-    return "text-slate-400"
+    return "text-zinc-600"
   }
 
-  const ruleBorderClass = (state: RuleState) => {
-    if (state === "valid") return "border-green-300"
-    if (state === "invalid") return "border-red-400"
-    return "border-slate-600"
+  const dotClass = (state: RuleState) => {
+    if (state === "valid") return "bg-yellow-400"
+    if (state === "invalid") return "bg-red-400"
+    return "bg-zinc-700"
   }
 
-  const ruleIcon = (state: RuleState) => {
-    if (state === "valid") return "✓"
-    if (state === "invalid") return "✕"
-    return ""
-  }
+  // Strength bar
+  const strength = rules.filter((r) => r.state === "valid").length
+  const strengthLabel = ["", "Weak", "Weak", "Fair", "Good", "Strong"][strength] ?? ""
+  const strengthColor = strength <= 2 ? "bg-red-500" : strength <= 3 ? "bg-yellow-500" : strength === 4 ? "bg-yellow-400" : "bg-green-400"
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4">
-      <div className="w-full max-w-md bg-slate-800 p-6 rounded-2xl shadow-lg">
-        <h1 className="text-2xl font-bold text-white">Register</h1>
+    <div className="relative min-h-screen flex items-center justify-center bg-black px-4 py-8 overflow-hidden">
+      <ConstellationCanvas />
 
-        {error && <div className="mt-4 text-sm text-red-400">{error}</div>}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <div className="h-[600px] w-[600px] rounded-full bg-yellow-500/5 blur-[100px]" />
+      </div>
 
-        <form
-          onSubmit={handleRegister}
-          className="mt-6 space-y-4"
-          autoComplete="off"
-        >
-          <div>
-            <label className="block text-sm text-slate-200 mb-1">Email</label>
-            <input
-              type="email"
-              placeholder="you@uwaterloo.ca"
-              className="w-full p-2 rounded bg-slate-900 text-white border border-slate-700 outline-none focus:border-slate-400"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="off"
-            />
+      <div className="relative z-10 w-full max-w-md">
+        {/* Brand */}
+        <div className="mb-8 text-center">
+          <div className="mb-4 flex justify-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 font-bold text-xl shadow-lg shadow-yellow-500/10">
+              W
+            </div>
           </div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">UW Course Planner</h1>
+          <p className="mt-1 text-sm text-zinc-500">Create your account to get started</p>
+        </div>
 
-          <div>
-            <label className="block text-sm text-slate-200 mb-1">Password</label>
-            <input
-              type="password"
-              placeholder="Create a password"
-              className="w-full p-2 rounded bg-slate-900 text-white border border-slate-700 outline-none focus:border-slate-400"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="new-password"
-            />
+        {/* Card */}
+        <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] px-8 py-8 shadow-2xl backdrop-blur-md">
+          {error && (
+            <div className="mb-5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              {error}
+            </div>
+          )}
 
-            {/* Live password policy checklist */}
-            <ul className="mt-3 space-y-1 text-xs">
-              {rules.map((r) => (
-                <li key={r.id} className={`flex items-center gap-2 ${ruleTextClass(r.state)}`}>
-                  <span
-                    className={`inline-flex h-4 w-4 items-center justify-center rounded-full border ${ruleBorderClass(
-                      r.state
-                    )}`}
-                    aria-hidden="true"
-                  >
-                    {ruleIcon(r.state)}
-                  </span>
+          <form onSubmit={handleRegister} className="space-y-5" autoComplete="off">
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-widest text-zinc-400">
+                Email
+              </label>
+              <input
+                type="email"
+                placeholder="you@uwaterloo.ca"
+                className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-yellow-500/60 focus:ring-2 focus:ring-yellow-500/10"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="off"
+              />
+            </div>
 
-                  <span className={r.state === "invalid" ? "line-through" : ""}>
-                    {r.label}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            {/* Password */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-widest text-zinc-400">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Create a password"
+                  className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 pr-11 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-yellow-500/60 focus:ring-2 focus:ring-yellow-500/10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 transition hover:text-yellow-400"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  <EyeIcon open={showPassword} />
+                </button>
+              </div>
+
+              {/* Strength bar */}
+              {password.length > 0 && (
+                <div className="space-y-1 pt-1">
+                  <div className="flex h-1 gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div
+                        key={i}
+                        className={`h-full flex-1 rounded-full transition-all duration-300 ${i <= strength ? strengthColor : "bg-white/[0.08]"}`}
+                      />
+                    ))}
+                  </div>
+                  {strengthLabel && (
+                    <p className="text-right text-xs text-zinc-500">
+                      Strength: <span className="font-medium text-zinc-300">{strengthLabel}</span>
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Rules */}
+              <ul className="mt-2 space-y-1.5">
+                {rules.map((r) => (
+                  <li key={r.id} className={`flex items-center gap-2 text-xs transition-colors ${ruleClass(r.state)}`}>
+                    <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full transition-colors ${dotClass(r.state)}`} />
+                    <span className={r.state === "invalid" ? "line-through opacity-50" : ""}>{r.label}</span>
+                    {r.state === "valid" && (
+                      <svg className="ml-auto h-3 w-3" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z" />
+                      </svg>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              className="w-full rounded-lg bg-yellow-400 py-2.5 text-sm font-bold text-black shadow-lg shadow-yellow-400/10 transition hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              {loading ? "Creating account…" : "Create Account"}
+            </button>
+          </form>
+
+          <div className="my-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-white/[0.06]" />
+            <span className="text-xs text-zinc-600">or</span>
+            <div className="h-px flex-1 bg-white/[0.06]" />
           </div>
 
           <button
-            className="w-full bg-white text-slate-900 font-semibold py-2 rounded hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={!canSubmit}
-            type="submit"
-            title={!isPasswordValid ? "Password does not meet the requirements." : ""}
+            onClick={handleGoogle}
+            disabled={loading}
+            type="button"
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-white/[0.08] bg-white/[0.03] py-2.5 text-sm font-medium text-zinc-300 transition hover:border-yellow-500/30 hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "Creating account..." : "Create Account"}
+            <GoogleIcon />
+            Continue with Google
           </button>
-        </form>
-
-        <div className="my-4 flex items-center gap-3">
-          <div className="h-px flex-1 bg-slate-700" />
-          <span className="text-xs text-slate-400">OR</span>
-          <div className="h-px flex-1 bg-slate-700" />
         </div>
 
-        <button
-          onClick={handleGoogle}
-          className="w-full border border-slate-600 text-white font-semibold py-2 rounded hover:bg-slate-700 disabled:opacity-60 disabled:cursor-not-allowed"
-          disabled={loading}
-          type="button"
-        >
-          Continue with Google
-        </button>
-
-        <p className="mt-6 text-sm text-slate-400 text-center">
+        <p className="mt-6 text-center text-sm text-zinc-600">
           Already have an account?{" "}
-          <Link to="/login" className="text-white underline">
+          <Link to="/login" className="font-medium text-yellow-400 transition hover:text-yellow-300">
             Login here
           </Link>
         </p>
