@@ -78,7 +78,7 @@ export default function Register() {
     setLoading(true)
     try {
       await createUserWithEmailAndPassword(auth, email, password)
-      navigate("/planner")
+      navigate("/onboarding")
     } catch (err: any) {
       setError(err?.message ?? "Registration failed.")
     } finally {
@@ -92,7 +92,7 @@ export default function Register() {
     try {
       const provider = new GoogleAuthProvider()
       await signInWithPopup(auth, provider)
-      navigate("/planner")
+      navigate("/onboarding")
     } catch (err: any) {
       setError(err?.message ?? "Google sign-in failed.")
     } finally {
@@ -154,7 +154,7 @@ export default function Register() {
               <input
                 type="email"
                 placeholder="you@uwaterloo.ca"
-                className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-yellow-500/60 focus:ring-2 focus:ring-yellow-500/10"
+                className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none backdrop-blur-md transition focus:border-yellow-500/60 focus:ring-2 focus:ring-yellow-500/10"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -171,7 +171,7 @@ export default function Register() {
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="Create a password"
-                  className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 pr-11 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-yellow-500/60 focus:ring-2 focus:ring-yellow-500/10"
+                  className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 pr-11 text-sm text-white placeholder-zinc-600 outline-none backdrop-blur-md transition focus:border-yellow-500/60 focus:ring-2 focus:ring-yellow-500/10"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required

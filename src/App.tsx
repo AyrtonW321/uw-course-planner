@@ -6,6 +6,7 @@ import MainPage from "./pages/mainpage"
 import Dashboard from "./pages/dashboard"
 import ProfilePage from "./pages/profilepage"
 import TimetablePage from "./pages/timetable"
+import Onboarding from "./pages/login/onboarding"
 
 
 export default function App() {
@@ -15,6 +16,9 @@ export default function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+
+      {/* First-run profile setup (auth required, no navbar) */}
+      <Route path="/onboarding" element={<Onboarding />} />
 
       {/* Protected app area (NavBar shows here) */}
       <Route path="/app" element={<MainPage />}>
