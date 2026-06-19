@@ -15,6 +15,7 @@ import {
 } from "./courses"
 import {
   getClassSchedules,
+  getCoursesByTerm,
   getCoursesBySubject,
   getCurrentTerm,
   getSubjects,
@@ -150,6 +151,25 @@ export async function listCoursesBySubject(
       .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
   }
   subjectCoursesCache.set(key, courses)
+  return courses
+}
+
+// Whole-term catalog, cached, for course-wide autocomplete search.
+let allCoursesCache: { termCode: string; courses: Course[] } | null = null
+
+export async function listAllCourses(termCode: string): Promise<Course[]> {
+  if (allCoursesCache?.termCode === termCode) return allCoursesCache.courses
+
+  let courses: Course[]
+  if (!USE_API) {
+    courses = COURSES
+  } else {
+    const raw = await getCoursesByTerm(termCode)
+    courses = raw
+      .map((c) => mapCourse(c))
+      .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
+  }
+  allCoursesCache = { termCode, courses }
   return courses
 }
 
