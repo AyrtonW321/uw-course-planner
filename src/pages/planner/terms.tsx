@@ -6,6 +6,7 @@ import { useDegreePlan } from "../../lib/degreePlan"
 import { useCoopPlan, type CoopSlot } from "../../lib/coop"
 import { useProfileMeta } from "../../lib/profile"
 import {
+  estimateCredit,
   getProgramRequirements,
   statusFor,
   type PrereqStatus,
@@ -92,7 +93,7 @@ export default function PlannerTerms() {
         <div className="mb-2 flex items-center justify-between">
           <span className="font-mono text-sm font-bold text-white">{slot.label}</span>
           <span className="text-xs text-zinc-600">
-            {courses.length} course{courses.length === 1 ? "" : "s"}
+            {courses.reduce((u, c) => u + estimateCredit(c.code), 0).toFixed(2)} units
           </span>
         </div>
 
