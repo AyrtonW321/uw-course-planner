@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react"
+import { Fragment, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import CourseSearch from "../../components/CourseSearch"
+import LeadsToPopover from "../../components/LeadsToPopover"
 import { useDegreePlan } from "../../lib/degreePlan"
 import { useCoopPlan, type CoopSlot } from "../../lib/coop"
 import { useProfileMeta } from "../../lib/profile"
@@ -20,6 +21,7 @@ const STATUS_DOT: Record<PrereqStatus, string> = {
 }
 
 type DragState = { from: string; code: string } | null
+type HoverState = { term: string; index: number } | null
 
 export default function PlannerTerms() {
   const navigate = useNavigate()
@@ -28,8 +30,9 @@ export default function PlannerTerms() {
   const coop = useCoopPlan()
   const slots = coop.slots
   const [drag, setDrag] = useState<DragState>(null)
+  const [hover, setHover] = useState<HoverState>(null)
+  const [asideOpen, setAsideOpen] = useState(true)
 
-  // Cumulative course codes taken before each slot, in sequence order.
   const haveBeforeSlot = useMemo(() => {
     const map: Record<string, Set<string>> = {}
     const acc = new Set<string>()
@@ -51,30 +54,38 @@ export default function PlannerTerms() {
 
   const open = (code: string) => navigate(`/app/courses/${encodeURIComponent(code)}`)
 
-  // --- Render helpers (plain functions, NOT components, so the DOM identity is
-  // stable across re-renders and native drag-and-drop isn't interrupted). ---
+  const drop = (term: string) => {
+    if (drag) moveCourse(drag.from, term, drag.code, hover?.term === term ? hover.index : undefined)
+    setDrag(null)
+    setHover(null)
+  }
+
+  // Green insertion line shown between courses while dragging.
+  const indicator = (term: string, i: number) =>
+    drag && hover?.term === term && hover.index === i ? (
+      <li className="my-0.5 h-0.5 rounded-full bg-green-400" />
+    ) : null
 
   const renderStudy = (slot: CoopSlot) => {
     const courses = plan[slot.label] ?? []
     const have = haveBeforeSlot[slot.id] ?? new Set<string>()
-    const isDropTarget = drag && drag.from !== slot.label
+    const isTarget = !!drag
 
     return (
       <div
         key={slot.id}
         onDragOver={(e) => {
-          if (isDropTarget) {
-            e.preventDefault()
-            e.dataTransfer.dropEffect = "move"
-          }
+          if (!isTarget) return
+          e.preventDefault()
+          e.dataTransfer.dropEffect = "move"
+          if (courses.length === 0) setHover({ term: slot.label, index: 0 })
         }}
         onDrop={(e) => {
           e.preventDefault()
-          if (drag) moveCourse(drag.from, slot.label, drag.code)
-          setDrag(null)
+          drop(slot.label)
         }}
         className={`${glassCard} p-5 transition ${
-          isDropTarget ? "border-yellow-500/40 ring-1 ring-yellow-500/30" : ""
+          isTarget && drag?.from !== slot.label ? "border-yellow-500/30" : ""
         }`}
       >
         <div className="mb-2 flex items-center justify-between">
@@ -85,53 +96,61 @@ export default function PlannerTerms() {
         </div>
 
         {courses.length === 0 ? (
-          <p className="py-2 text-xs text-zinc-600">Drag or search to add courses.</p>
+          <ul>
+            {indicator(slot.label, 0)}
+            <li className="py-2 text-xs text-zinc-600">Drag or search to add courses.</li>
+          </ul>
         ) : (
-          <ul className="space-y-1">
-            {courses.map((crs) => {
+          <ul>
+            {courses.map((crs, i) => {
               const { status, prereqs } = prereqStatus(crs.code, have)
               const leadsTo = getLeadsTo(crs.code)
               const tip = [
                 status === "met" ? "Prerequisites met" : status === "grade" ? "Prereq needs a grade" : "Missing a prerequisite",
                 prereqs.length ? `Prereqs: ${prereqs.map((p) => p.code + (p.minGrade ? ` (≥${p.minGrade}%)` : "")).join(", ")}` : "No prerequisites",
-                leadsTo.length ? `Leads to: ${leadsTo.join(", ")}` : "",
               ].filter(Boolean).join("\n")
 
               return (
-                <li
-                  key={crs.code}
-                  draggable
-                  onDragStart={(e) => {
-                    setDrag({ from: slot.label, code: crs.code })
-                    e.dataTransfer.effectAllowed = "move"
-                    e.dataTransfer.setData("text/plain", crs.code)
-                  }}
-                  onDragEnd={() => setDrag(null)}
-                  className="flex cursor-grab items-center gap-2 rounded-md px-1 py-1.5 transition hover:bg-white/[0.04] active:cursor-grabbing"
-                >
-                  <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${STATUS_DOT[status]}`} title={tip} />
-                  <button onClick={() => open(crs.code)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
-                    <span className="font-mono text-xs font-bold text-yellow-400">{crs.code}</span>
-                    <span className="truncate text-xs text-zinc-500">{crs.name}</span>
-                  </button>
-                  {leadsTo.length > 0 && (
-                    <span
-                      className="flex-shrink-0 rounded-full border border-white/[0.08] bg-white/[0.03] px-1.5 text-[10px] text-zinc-400"
-                      title={`Leads to: ${leadsTo.join(", ")}`}
-                    >
-                      →{leadsTo.length}
-                    </span>
-                  )}
-                  <button
-                    onClick={() => removeCourse(slot.label, crs.code)}
-                    className="flex-shrink-0 text-xs text-zinc-600 transition hover:text-red-400"
-                    aria-label={`Remove ${crs.code}`}
+                <Fragment key={crs.code}>
+                  {indicator(slot.label, i)}
+                  <li
+                    draggable
+                    onDragStart={(e) => {
+                      setDrag({ from: slot.label, code: crs.code })
+                      e.dataTransfer.effectAllowed = "move"
+                      e.dataTransfer.setData("text/plain", crs.code)
+                    }}
+                    onDragEnd={() => {
+                      setDrag(null)
+                      setHover(null)
+                    }}
+                    onDragOver={(e) => {
+                      if (!drag) return
+                      e.preventDefault()
+                      const r = e.currentTarget.getBoundingClientRect()
+                      const before = e.clientY < r.top + r.height / 2
+                      setHover({ term: slot.label, index: before ? i : i + 1 })
+                    }}
+                    className="flex cursor-grab items-center gap-2 rounded-md px-1 py-1.5 transition hover:bg-white/[0.04] active:cursor-grabbing"
                   >
-                    ✕
-                  </button>
-                </li>
+                    <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${STATUS_DOT[status]}`} title={tip} />
+                    <button onClick={() => open(crs.code)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                      <span className="font-mono text-xs font-bold text-yellow-400">{crs.code}</span>
+                      <span className="truncate text-xs text-zinc-500">{crs.name}</span>
+                    </button>
+                    {leadsTo.length > 0 && <LeadsToPopover codes={leadsTo} />}
+                    <button
+                      onClick={() => removeCourse(slot.label, crs.code)}
+                      className="flex-shrink-0 text-xs text-zinc-600 transition hover:text-red-400"
+                      aria-label={`Remove ${crs.code}`}
+                    >
+                      ✕
+                    </button>
+                  </li>
+                </Fragment>
               )
             })}
+            {indicator(slot.label, courses.length)}
           </ul>
         )}
 
@@ -145,8 +164,10 @@ export default function PlannerTerms() {
   const renderWork = (slot: CoopSlot) => {
     const record = coop.plan.work[slot.id]
     const online = coop.plan.onlineCourses[slot.id] ?? []
-    // Only show a work term once it has something recorded on the Co-op page.
-    if (!record && online.length === 0) return null
+    // Show a work term on the planner only once it has real content.
+    const hasContent =
+      online.length > 0 || record?.status === "employed" || !!record?.employer?.trim()
+    if (!hasContent) return null
 
     return (
       <div key={slot.id} className={`${glassCard} border-sky-500/20 p-5`}>
@@ -155,11 +176,7 @@ export default function PlannerTerms() {
           <span className="text-[10px] uppercase tracking-wide text-zinc-600">Work term</span>
         </div>
         <p className="mb-2 text-xs text-zinc-500">
-          {record?.status === "employed"
-            ? record.employer || "Employed"
-            : record?.status === "unemployed"
-            ? "Unemployed"
-            : "Online courses"}
+          {record?.status === "employed" ? record.employer || "Employed" : "Online courses"}
         </p>
 
         {online.length > 0 && (
@@ -189,21 +206,30 @@ export default function PlannerTerms() {
   }
 
   const hasProgram = !!getProgramRequirements(meta?.program)
+  const showAside = hasProgram && asideOpen
 
   return (
-    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]">
+    <div className={`grid grid-cols-1 gap-6 ${showAside ? "xl:grid-cols-[1fr_320px]" : ""}`}>
       <div className="space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">Planner</h1>
             <p className="mt-1 text-sm text-zinc-500">
-              Drag courses between terms · click a course for details
+              Drag courses to reorder or move terms · click a course for details
             </p>
           </div>
           <div className="flex items-center gap-4 text-xs text-zinc-500">
             <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-green-400" /> Met</span>
             <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-yellow-400" /> Needs grade</span>
             <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-red-400" /> Missing</span>
+            {hasProgram && !asideOpen && (
+              <button
+                onClick={() => setAsideOpen(true)}
+                className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 font-medium text-zinc-300 transition hover:border-yellow-500/30 hover:text-yellow-300"
+              >
+                Show My Degree
+              </button>
+            )}
           </div>
         </div>
 
@@ -218,7 +244,7 @@ export default function PlannerTerms() {
         </div>
       </div>
 
-      {hasProgram && <RequirementsAside />}
+      {showAside && <RequirementsAside onCollapse={() => setAsideOpen(false)} />}
     </div>
   )
 }

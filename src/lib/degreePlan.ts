@@ -82,19 +82,33 @@ export function useDegreePlan() {
     [user]
   )
 
-  /** Move a course from one term to another (drag and drop). */
+  /**
+   * Move a course to a target term at a specific index (drag and drop).
+   * Handles both cross-term moves and reordering within the same term.
+   */
   const moveCourse = useCallback(
-    (fromTerm: string, toTerm: string, code: string) => {
-      if (fromTerm === toTerm) return
+    (fromTerm: string, toTerm: string, code: string, index?: number) => {
       setPlan((prev) => {
         const course = (prev[fromTerm] ?? []).find((c) => c.code === code)
         if (!course) return prev
-        const toList = prev[toTerm] ?? []
-        if (toList.some((c) => c.code === code)) return prev
+
+        if (fromTerm === toTerm) {
+          const list = (prev[toTerm] ?? []).filter((c) => c.code !== code)
+          const at = index === undefined ? list.length : Math.min(index, list.length)
+          list.splice(at, 0, course)
+          const next = { ...prev, [toTerm]: list }
+          if (user) setDoc(doc(db, "users", user.uid), { degreePlan: next }, { merge: true })
+          return next
+        }
+
+        if ((prev[toTerm] ?? []).some((c) => c.code === code)) return prev
+        const toList = [...(prev[toTerm] ?? [])]
+        const at = index === undefined ? toList.length : Math.min(index, toList.length)
+        toList.splice(at, 0, course)
         const next = {
           ...prev,
           [fromTerm]: (prev[fromTerm] ?? []).filter((c) => c.code !== code),
-          [toTerm]: [...toList, course],
+          [toTerm]: toList,
         }
         if (user) setDoc(doc(db, "users", user.uid), { degreePlan: next }, { merge: true })
         return next

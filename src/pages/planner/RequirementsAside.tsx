@@ -31,7 +31,7 @@ function MiniBar({ value, max, label }: { value: number; max: number; label: str
 }
 
 /** Compact "My Degree" summary shown alongside the planner. */
-export default function RequirementsAside() {
+export default function RequirementsAside({ onCollapse }: { onCollapse?: () => void }) {
   const { meta } = useProfileMeta()
   const { plan } = useDegreePlan()
   const coop = useCoopPlan()
@@ -62,9 +62,20 @@ export default function RequirementsAside() {
       <div className={`${glassCard} space-y-3 p-4`}>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-white">My Degree</h2>
-          <Link to="/app/planner/degree" className="text-[11px] text-yellow-400 hover:text-yellow-300">
-            Details
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link to="/app/planner/degree" className="text-[11px] text-yellow-400 hover:text-yellow-300">
+              Details
+            </Link>
+            {onCollapse && (
+              <button
+                onClick={onCollapse}
+                title="Minimize"
+                className="rounded border border-white/[0.08] px-1.5 text-xs text-zinc-400 transition hover:text-white"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
         <MiniBar value={math} max={req.mathUnits} label="Math units" />
         <MiniBar value={nonMath} max={req.nonMathUnits} label="Non-math units" />
