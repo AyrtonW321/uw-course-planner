@@ -11,7 +11,6 @@ type NavBarProps = {
 export default function NavBar({ user }: NavBarProps) {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
   const menuRef = useRef<HTMLDivElement | null>(null)
 
   const displayName = useMemo(() => {
@@ -34,14 +33,6 @@ export default function NavBar({ user }: NavBarProps) {
     navigate("/")
   }
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!searchQuery.trim()) return
-
-    navigate(`/app/courses?q=${encodeURIComponent(searchQuery.trim())}`)
-    setSearchQuery("")
-  }
-
   return (
     <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-black/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
@@ -53,7 +44,7 @@ export default function NavBar({ user }: NavBarProps) {
           <span className="hidden font-semibold text-white sm:block">UW Course Planner</span>
         </Link>
 
-        {/* Middle: nav + search */}
+        {/* Middle: nav */}
         <div className="hidden flex-1 items-center justify-center gap-6 text-sm md:flex">
           <Link className="text-zinc-400 transition hover:text-white" to="/app">
             Dashboard
@@ -61,17 +52,9 @@ export default function NavBar({ user }: NavBarProps) {
           <Link className="text-zinc-400 transition hover:text-white" to="/app/courses">
             Courses
           </Link>
-
-          {/* 🔍 TEMP SEARCH BAR */}
-          <form onSubmit={handleSearch} className="ml-6">
-            <input
-              type="text"
-              placeholder="Search courses (e.g. CS 135)"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-56 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-yellow-500/60 focus:ring-2 focus:ring-yellow-500/10"
-            />
-          </form>
+          <Link className="text-zinc-400 transition hover:text-white" to="/app/planner">
+            Degree Planner
+          </Link>
         </div>
 
         {/* Right: dropdown */}
