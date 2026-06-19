@@ -5,6 +5,7 @@ import { getCourseWithSections, getTermInfo } from "../lib/catalog"
 import { useTimetable } from "../lib/timetable"
 import { ALL_TERM_IDS, useDegreePlan } from "../lib/degreePlan"
 import { PREREQS, getLeadsTo } from "../lib/requirements"
+import SelectMenu from "../components/SelectMenu"
 import { glassCard, goldButton, glassButton } from "../lib/ui"
 
 export default function CourseInfoPage() {
@@ -73,10 +74,11 @@ export default function CourseInfoPage() {
     )
   }
 
-  // Colour a prerequisite chip: red missing, yellow needs grade, green met.
+  // Colour a prerequisite chip: yellow if it needs a grade, else red if not
+  // planned, else green.
   const chipClass = (pcode: string, minGrade?: number) => {
-    if (!have.has(pcode)) return "border-red-500/40 bg-red-500/10 text-red-300"
     if (minGrade) return "border-yellow-500/40 bg-yellow-500/10 text-yellow-300"
+    if (!have.has(pcode)) return "border-red-500/40 bg-red-500/10 text-red-300"
     return "border-green-500/40 bg-green-500/10 text-green-300"
   }
 
@@ -153,32 +155,31 @@ export default function CourseInfoPage() {
         )}
 
         {/* Add to degree planner */}
-        <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-white/[0.06] pt-4">
-          <span className="text-sm text-zinc-400">Add to degree planner:</span>
-          <select
-            value={planTerm}
-            onChange={(e) => setPlanTerm(e.target.value)}
-            className="rounded-lg border border-white/[0.08] bg-white/[0.05] px-3 py-1.5 text-sm text-white outline-none focus:border-yellow-500/60"
-          >
-            {ALL_TERM_IDS.map((t) => (
-              <option key={t} value={t} className="bg-zinc-900">
-                {t}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={() => addCourse(planTerm, { code: course.code, name: course.name })}
-            disabled={alreadyPlanned}
-            className={`${goldButton} px-4 py-1.5 text-sm`}
-          >
-            {alreadyPlanned ? "In your plan" : "Add"}
-          </button>
-          <button
-            onClick={() => navigate("/app/planner")}
-            className={`${glassButton} px-4 py-1.5 text-sm font-medium`}
-          >
-            Open planner
-          </button>
+        <div className="mt-5 border-t border-white/[0.06] pt-4">
+          <p className="mb-2 text-sm text-zinc-400">Add to your plan</p>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="w-28">
+              <SelectMenu
+                label="Term"
+                value={planTerm}
+                options={[...ALL_TERM_IDS]}
+                onChange={setPlanTerm}
+              />
+            </div>
+            <button
+              onClick={() => addCourse(planTerm, { code: course.code, name: course.name })}
+              disabled={alreadyPlanned}
+              className={`${goldButton} px-4 py-2.5 text-sm`}
+            >
+              {alreadyPlanned ? "In your plan" : "Add to planner"}
+            </button>
+            <button
+              onClick={() => navigate("/app/planner")}
+              className={`${glassButton} px-4 py-2.5 text-sm font-medium`}
+            >
+              Open planner
+            </button>
+          </div>
         </div>
       </div>
 
@@ -250,6 +251,7 @@ export default function CourseInfoPage() {
                         type: s.type,
                         section: s.section,
                         termCode,
+                        term: planTerm,
                         instructor: s.instructor,
                         meetings: s.meetings,
                       })

@@ -181,8 +181,10 @@ export function prereqStatus(
   let anyMissing = false
   let anyGrade = false
   for (const p of prereqs) {
-    if (!have.has(p.code)) anyMissing = true
-    else if (p.minGrade) anyGrade = true
+    // A prereq that requires a specific mark is always "needs a grade" (yellow),
+    // whether or not it's already planned.
+    if (p.minGrade) anyGrade = true
+    else if (!have.has(p.code)) anyMissing = true
   }
   const status: PrereqStatus = anyMissing ? "missing" : anyGrade ? "grade" : "met"
   return { status, prereqs }
