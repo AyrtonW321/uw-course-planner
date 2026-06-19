@@ -29,7 +29,7 @@ export default function PlannerTerms() {
   const slots = coop.slots
   const [drag, setDrag] = useState<DragState>(null)
 
-  // Cumulative set of course codes taken before each slot, in sequence order.
+  // Cumulative course codes taken before each slot, in sequence order.
   const haveBeforeSlot = useMemo(() => {
     const map: Record<string, Set<string>> = {}
     const acc = new Set<string>()
@@ -51,15 +51,25 @@ export default function PlannerTerms() {
 
   const open = (code: string) => navigate(`/app/courses/${encodeURIComponent(code)}`)
 
-  const StudyCard = ({ slot }: { slot: CoopSlot }) => {
+  // --- Render helpers (plain functions, NOT components, so the DOM identity is
+  // stable across re-renders and native drag-and-drop isn't interrupted). ---
+
+  const renderStudy = (slot: CoopSlot) => {
     const courses = plan[slot.label] ?? []
     const have = haveBeforeSlot[slot.id] ?? new Set<string>()
     const isDropTarget = drag && drag.from !== slot.label
 
     return (
       <div
-        onDragOver={(e) => isDropTarget && e.preventDefault()}
-        onDrop={() => {
+        key={slot.id}
+        onDragOver={(e) => {
+          if (isDropTarget) {
+            e.preventDefault()
+            e.dataTransfer.dropEffect = "move"
+          }
+        }}
+        onDrop={(e) => {
+          e.preventDefault()
           if (drag) moveCourse(drag.from, slot.label, drag.code)
           setDrag(null)
         }}
@@ -91,15 +101,16 @@ export default function PlannerTerms() {
                 <li
                   key={crs.code}
                   draggable
-                  onDragStart={() => setDrag({ from: slot.label, code: crs.code })}
+                  onDragStart={(e) => {
+                    setDrag({ from: slot.label, code: crs.code })
+                    e.dataTransfer.effectAllowed = "move"
+                    e.dataTransfer.setData("text/plain", crs.code)
+                  }}
                   onDragEnd={() => setDrag(null)}
                   className="flex cursor-grab items-center gap-2 rounded-md px-1 py-1.5 transition hover:bg-white/[0.04] active:cursor-grabbing"
                 >
                   <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${STATUS_DOT[status]}`} title={tip} />
-                  <button
-                    onClick={() => open(crs.code)}
-                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                  >
+                  <button onClick={() => open(crs.code)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
                     <span className="font-mono text-xs font-bold text-yellow-400">{crs.code}</span>
                     <span className="truncate text-xs text-zinc-500">{crs.name}</span>
                   </button>
@@ -131,11 +142,14 @@ export default function PlannerTerms() {
     )
   }
 
-  const WorkCard = ({ slot }: { slot: CoopSlot }) => {
+  const renderWork = (slot: CoopSlot) => {
     const record = coop.plan.work[slot.id]
     const online = coop.plan.onlineCourses[slot.id] ?? []
+    // Only show a work term once it has something recorded on the Co-op page.
+    if (!record && online.length === 0) return null
+
     return (
-      <div className={`${glassCard} border-sky-500/20 p-5`}>
+      <div key={slot.id} className={`${glassCard} border-sky-500/20 p-5`}>
         <div className="mb-1 flex items-center justify-between">
           <span className="font-mono text-sm font-bold text-sky-300">{slot.label}</span>
           <span className="text-[10px] uppercase tracking-wide text-zinc-600">Work term</span>
@@ -145,7 +159,7 @@ export default function PlannerTerms() {
             ? record.employer || "Employed"
             : record?.status === "unemployed"
             ? "Unemployed"
-            : "Not set"}
+            : "Online courses"}
         </p>
 
         {online.length > 0 && (
@@ -169,10 +183,7 @@ export default function PlannerTerms() {
           </ul>
         )}
 
-        <CourseSearch
-          placeholder="Add an online course…"
-          onPick={(c) => coop.addOnlineCourse(slot.id, c)}
-        />
+        <CourseSearch placeholder="Add an online course…" onPick={(c) => coop.addOnlineCourse(slot.id, c)} />
       </div>
     )
   }
@@ -198,21 +209,15 @@ export default function PlannerTerms() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {slots.map((slot) =>
-            slot.type === "study" ? (
-              <StudyCard key={slot.id} slot={slot} />
-            ) : slot.type === "work" ? (
-              <WorkCard key={slot.id} slot={slot} />
-            ) : (
-              <div key={slot.id} className={`${glassCard} flex items-center justify-between p-5`}>
-                <span className="font-mono text-sm font-bold text-zinc-400">{slot.label}</span>
-                <span className="text-[10px] uppercase tracking-wide text-zinc-600">Off term</span>
-              </div>
-            )
+            slot.type === "study"
+              ? renderStudy(slot)
+              : slot.type === "work"
+              ? renderWork(slot)
+              : null
           )}
         </div>
       </div>
 
-      {/* My Degree side panel */}
       {hasProgram && <RequirementsAside />}
     </div>
   )

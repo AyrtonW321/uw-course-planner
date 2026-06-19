@@ -84,9 +84,17 @@ export default function CoopPage() {
             <div
               key={slot.id}
               draggable
-              onDragStart={() => setDragIndex(i)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => {
+              onDragStart={(e) => {
+                setDragIndex(i)
+                e.dataTransfer.effectAllowed = "move"
+                e.dataTransfer.setData("text/plain", String(i))
+              }}
+              onDragOver={(e) => {
+                e.preventDefault()
+                e.dataTransfer.dropEffect = "move"
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
                 if (dragIndex !== null) reorderSlots(dragIndex, i)
                 setDragIndex(null)
               }}
