@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useState } from "react"
 import { getTermInfo, listAllCourses } from "./catalog"
-import { PREREQS, getLeadsTo as handLeadsTo, type ReqCourse } from "./requirements"
-import { parsePrereqs } from "./prereqParser"
+import { PREREQS, getLeadsTo as handLeadsTo, type PrereqClause } from "./requirements"
+import { parsePrereqClauses } from "./prereqParser"
 
 type Index = {
-  prereqs: Map<string, ReqCourse[]>
+  prereqs: Map<string, PrereqClause[]>
   leadsTo: Map<string, string[]>
+}
+
+/** Hand-curated prereqs (flat) as single-alternative clauses, for fallback. */
+function handClauses(code: string): PrereqClause[] {
+  return (PREREQS[code] ?? []).map((rc) => [rc])
 }
 
 // Built once per term from the whole catalog, then reused across pages.
@@ -28,20 +33,25 @@ export function usePrereqIndex() {
     getTermInfo()
       .then((t) => listAllCourses(t.termCode).then((courses) => ({ t, courses })))
       .then(({ t, courses }) => {
-        const prereqs = new Map<string, ReqCourse[]>()
+        const prereqs = new Map<string, PrereqClause[]>()
         for (const c of courses) {
-          const parsed = parsePrereqs(c.requirements)
+          const parsed = parsePrereqClauses(c.requirements)
           if (parsed.length) prereqs.set(c.code, parsed)
         }
-        // Hand-curated entries win over parsed ones.
-        for (const [code, list] of Object.entries(PREREQS)) prereqs.set(code, list)
 
+        // Reverse edges: a course leads to X if it appears in any alternative
+        // of any of X's clauses.
         const leadsTo = new Map<string, string[]>()
-        for (const [code, list] of prereqs.entries()) {
-          for (const p of list) {
-            const arr = leadsTo.get(p.code) ?? []
-            if (!arr.includes(code)) arr.push(code)
-            leadsTo.set(p.code, arr)
+        for (const [code, clauses] of prereqs.entries()) {
+          const seen = new Set<string>()
+          for (const clause of clauses) {
+            for (const alt of clause) {
+              if (seen.has(alt.code)) continue
+              seen.add(alt.code)
+              const arr = leadsTo.get(alt.code) ?? []
+              if (!arr.includes(code)) arr.push(code)
+              leadsTo.set(alt.code, arr)
+            }
           }
         }
 
@@ -56,7 +66,7 @@ export function usePrereqIndex() {
   }, [])
 
   const resolve = useCallback(
-    (code: string): ReqCourse[] => index?.prereqs.get(code) ?? PREREQS[code] ?? [],
+    (code: string): PrereqClause[] => index?.prereqs.get(code) ?? handClauses(code),
     [index]
   )
   const leadsTo = useCallback(

@@ -164,14 +164,26 @@ export const PREREQS: Record<string, ReqCourse[]> = {
 
 export type PrereqStatus = "met" | "missing" | "grade"
 
-/** Aggregate status from an explicit prereq list (works with parsed prereqs). */
-export function statusFor(prereqs: ReqCourse[], have: Set<string>): PrereqStatus {
-  if (prereqs.length === 0) return "met"
+/** A prerequisite clause: OR-alternatives. Clauses are ANDed together. */
+export type PrereqClause = ReqCourse[]
+
+/**
+ * Aggregate status across AND-clauses of OR-alternatives.
+ *  - A clause is satisfied if any alternative is in `have`.
+ *  - "missing" if some clause has no alternative satisfied.
+ *  - "grade" if all clauses satisfied but at least one only via an
+ *    alternative that needs a minimum mark.
+ */
+export function statusForClauses(clauses: PrereqClause[], have: Set<string>): PrereqStatus {
+  if (clauses.length === 0) return "met"
   let anyMissing = false
   let anyGrade = false
-  for (const p of prereqs) {
-    if (p.minGrade) anyGrade = true
-    else if (!have.has(p.code)) anyMissing = true
+  for (const clause of clauses) {
+    const plain = clause.some((a) => !a.minGrade && have.has(a.code))
+    const grade = clause.some((a) => a.minGrade && have.has(a.code))
+    if (plain) continue
+    if (grade) anyGrade = true
+    else anyMissing = true
   }
   return anyMissing ? "missing" : anyGrade ? "grade" : "met"
 }

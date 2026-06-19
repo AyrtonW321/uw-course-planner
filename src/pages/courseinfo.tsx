@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from "react"
+import { Fragment, useEffect, useMemo, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { DAY_LABELS, formatTime, type Course } from "../lib/courses"
 import { getCourseWithSections, getTermInfo } from "../lib/catalog"
 import { useTimetable } from "../lib/timetable"
 import { ALL_TERM_IDS, useDegreePlan } from "../lib/degreePlan"
 import { PREREQS } from "../lib/requirements"
-import { parsePrereqs } from "../lib/prereqParser"
+import { parsePrereqClauses } from "../lib/prereqParser"
 import { usePrereqIndex } from "../lib/usePrereq"
 import { useCourseRating } from "../lib/uwflow"
 import { RatingCard } from "../components/CourseRating"
@@ -56,11 +56,13 @@ export default function CourseInfoPage() {
     }
   }, [decoded])
 
-  // Prefer hand-curated prereqs; otherwise parse the course's requirements text.
-  const prereqs = useMemo(
-    () => PREREQS[decoded] ?? parsePrereqs(course?.requirements),
-    [decoded, course]
-  )
+  // Parse the course's requirements into AND-clauses of OR-alternatives;
+  // fall back to hand-curated prereqs (as single-alternative clauses).
+  const clauses = useMemo(() => {
+    const parsed = parsePrereqClauses(course?.requirements)
+    if (parsed.length) return parsed
+    return (PREREQS[decoded] ?? []).map((rc) => [rc])
+  }, [decoded, course])
   const leadsTo = useMemo(() => leadsToIndex(decoded), [decoded, leadsToIndex])
 
   if (loading) {
@@ -84,12 +86,13 @@ export default function CourseInfoPage() {
     )
   }
 
-  // Colour a prerequisite chip: yellow if it needs a grade, else red if not
-  // planned, else green.
-  const chipClass = (pcode: string, minGrade?: number) => {
+  // Colour a prerequisite chip. Within an OR clause that's already satisfied,
+  // the un-taken alternatives are shown neutral (you only need one).
+  const chipClass = (pcode: string, minGrade: number | undefined, clauseSatisfied: boolean) => {
+    if (have.has(pcode) && !minGrade) return "border-green-500/40 bg-green-500/10 text-green-300"
     if (minGrade) return "border-yellow-500/40 bg-yellow-500/10 text-yellow-300"
-    if (!have.has(pcode)) return "border-red-500/40 bg-red-500/10 text-red-300"
-    return "border-green-500/40 bg-green-500/10 text-green-300"
+    if (clauseSatisfied) return "border-white/[0.1] bg-white/[0.04] text-zinc-400"
+    return "border-red-500/40 bg-red-500/10 text-red-300"
   }
 
   const alreadyPlanned = have.has(course.code)
@@ -113,33 +116,44 @@ export default function CourseInfoPage() {
           </p>
         )}
 
-        {/* Prerequisites */}
-        {prereqs.length > 0 && (
+        {/* Prerequisites — clauses are ANDed, alternatives within are ORed. */}
+        {clauses.length > 0 && (
           <div className="mt-4">
             <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-zinc-500">
               Prerequisites
             </p>
-            <div className="flex flex-wrap gap-2">
-              {prereqs.map((p) => (
-                <Link
-                  key={p.code}
-                  to={`/app/courses/${encodeURIComponent(p.code)}`}
-                  title={
-                    !have.has(p.code)
-                      ? "You haven't planned this yet"
-                      : p.minGrade
-                      ? `Needs at least ${p.minGrade}%`
-                      : "Requirement met"
-                  }
-                  className={`rounded-full border px-2.5 py-1 text-xs font-mono font-semibold transition hover:brightness-125 ${chipClass(
-                    p.code,
-                    p.minGrade
-                  )}`}
-                >
-                  {p.code}
-                  {p.minGrade ? ` ≥${p.minGrade}%` : ""}
-                </Link>
-              ))}
+            <div className="space-y-1.5">
+              {clauses.map((clause, ci) => {
+                const satisfied = clause.some((a) => have.has(a.code))
+                return (
+                <div key={ci} className="flex flex-wrap items-center gap-1.5">
+                  {ci > 0 && <span className="mr-1 text-[10px] font-semibold uppercase text-zinc-600">and</span>}
+                  {clause.map((p, ai) => (
+                    <Fragment key={p.code}>
+                      {ai > 0 && <span className="text-[10px] text-zinc-600">or</span>}
+                      <Link
+                        to={`/app/courses/${encodeURIComponent(p.code)}`}
+                        title={
+                          p.minGrade
+                            ? `Needs at least ${p.minGrade}%`
+                            : have.has(p.code)
+                            ? "Requirement met"
+                            : "You haven't planned this yet"
+                        }
+                        className={`rounded-full border px-2.5 py-1 text-xs font-mono font-semibold transition hover:brightness-125 ${chipClass(
+                          p.code,
+                          p.minGrade,
+                          satisfied
+                        )}`}
+                      >
+                        {p.code}
+                        {p.minGrade ? ` ≥${p.minGrade}%` : ""}
+                      </Link>
+                    </Fragment>
+                  ))}
+                </div>
+                )
+              })}
             </div>
           </div>
         )}

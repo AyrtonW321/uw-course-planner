@@ -8,7 +8,7 @@ import { useProfileMeta } from "../../lib/profile"
 import {
   estimateCredit,
   getProgramRequirements,
-  statusFor,
+  statusForClauses,
   type PrereqStatus,
 } from "../../lib/requirements"
 import { usePrereqIndex } from "../../lib/usePrereq"
@@ -105,12 +105,16 @@ export default function PlannerTerms() {
         ) : (
           <ul>
             {courses.map((crs, i) => {
-              const prereqs = resolve(crs.code)
-              const status = statusFor(prereqs, have)
+              const clauses = resolve(crs.code)
+              const status = statusForClauses(clauses, have)
               const lt = leadsTo(crs.code)
               const tip = [
                 status === "met" ? "Prerequisites met" : status === "grade" ? "Prereq needs a grade" : "Missing a prerequisite",
-                prereqs.length ? `Prereqs: ${prereqs.map((p) => p.code + (p.minGrade ? ` (≥${p.minGrade}%)` : "")).join(", ")}` : "No prerequisites",
+                clauses.length
+                  ? `Prereqs: ${clauses
+                      .map((cl) => cl.map((p) => p.code + (p.minGrade ? ` (≥${p.minGrade}%)` : "")).join(" or "))
+                      .join("; and ")}`
+                  : "No prerequisites",
               ].filter(Boolean).join("\n")
 
               return (
