@@ -4,7 +4,9 @@ import { DAY_LABELS, formatTime, type Course } from "../lib/courses"
 import { getCourseWithSections, getTermInfo } from "../lib/catalog"
 import { useTimetable } from "../lib/timetable"
 import { ALL_TERM_IDS, useDegreePlan } from "../lib/degreePlan"
-import { PREREQS, getLeadsTo } from "../lib/requirements"
+import { PREREQS } from "../lib/requirements"
+import { parsePrereqs } from "../lib/prereqParser"
+import { usePrereqIndex } from "../lib/usePrereq"
 import SelectMenu from "../components/SelectMenu"
 import { glassCard, goldButton, glassButton } from "../lib/ui"
 
@@ -21,6 +23,7 @@ export default function CourseInfoPage() {
 
   const { has, add, remove } = useTimetable()
   const { plan, addCourse } = useDegreePlan()
+  const { leadsTo: leadsToIndex } = usePrereqIndex()
 
   // Everything the student has placed in their plan — used to colour prereqs.
   const have = useMemo(() => {
@@ -50,8 +53,12 @@ export default function CourseInfoPage() {
     }
   }, [decoded])
 
-  const prereqs = PREREQS[decoded] ?? []
-  const leadsTo = useMemo(() => getLeadsTo(decoded), [decoded])
+  // Prefer hand-curated prereqs; otherwise parse the course's requirements text.
+  const prereqs = useMemo(
+    () => PREREQS[decoded] ?? parsePrereqs(course?.requirements),
+    [decoded, course]
+  )
+  const leadsTo = useMemo(() => leadsToIndex(decoded), [decoded, leadsToIndex])
 
   if (loading) {
     return (

@@ -6,11 +6,11 @@ import { useDegreePlan } from "../../lib/degreePlan"
 import { useCoopPlan, type CoopSlot } from "../../lib/coop"
 import { useProfileMeta } from "../../lib/profile"
 import {
-  getLeadsTo,
   getProgramRequirements,
-  prereqStatus,
+  statusFor,
   type PrereqStatus,
 } from "../../lib/requirements"
+import { usePrereqIndex } from "../../lib/usePrereq"
 import { glassCard } from "../../lib/ui"
 import RequirementsAside from "./RequirementsAside"
 
@@ -28,6 +28,7 @@ export default function PlannerTerms() {
   const { plan, loading, addCourse, removeCourse, moveCourse } = useDegreePlan()
   const { meta } = useProfileMeta()
   const coop = useCoopPlan()
+  const { resolve, leadsTo } = usePrereqIndex()
   const slots = coop.slots
   const [drag, setDrag] = useState<DragState>(null)
   const [hover, setHover] = useState<HoverState>(null)
@@ -103,8 +104,9 @@ export default function PlannerTerms() {
         ) : (
           <ul>
             {courses.map((crs, i) => {
-              const { status, prereqs } = prereqStatus(crs.code, have)
-              const leadsTo = getLeadsTo(crs.code)
+              const prereqs = resolve(crs.code)
+              const status = statusFor(prereqs, have)
+              const lt = leadsTo(crs.code)
               const tip = [
                 status === "met" ? "Prerequisites met" : status === "grade" ? "Prereq needs a grade" : "Missing a prerequisite",
                 prereqs.length ? `Prereqs: ${prereqs.map((p) => p.code + (p.minGrade ? ` (≥${p.minGrade}%)` : "")).join(", ")}` : "No prerequisites",
@@ -138,7 +140,7 @@ export default function PlannerTerms() {
                       <span className="font-mono text-xs font-bold text-yellow-400">{crs.code}</span>
                       <span className="truncate text-xs text-zinc-500">{crs.name}</span>
                     </button>
-                    {leadsTo.length > 0 && <LeadsToPopover codes={leadsTo} />}
+                    {lt.length > 0 && <LeadsToPopover codes={lt} />}
                     <button
                       onClick={() => removeCourse(slot.label, crs.code)}
                       className="flex-shrink-0 text-xs text-zinc-600 transition hover:text-red-400"

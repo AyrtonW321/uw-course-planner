@@ -164,6 +164,18 @@ export const PREREQS: Record<string, ReqCourse[]> = {
 
 export type PrereqStatus = "met" | "missing" | "grade"
 
+/** Aggregate status from an explicit prereq list (works with parsed prereqs). */
+export function statusFor(prereqs: ReqCourse[], have: Set<string>): PrereqStatus {
+  if (prereqs.length === 0) return "met"
+  let anyMissing = false
+  let anyGrade = false
+  for (const p of prereqs) {
+    if (p.minGrade) anyGrade = true
+    else if (!have.has(p.code)) anyMissing = true
+  }
+  return anyMissing ? "missing" : anyGrade ? "grade" : "met"
+}
+
 /**
  * Status of `course`'s prerequisites given the set of courses the student
  * already has (completed/planned earlier).
