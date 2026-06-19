@@ -1,20 +1,32 @@
-import { useEffect, useState } from "react"
-import { Link, useParams } from "react-router-dom"
+import { useEffect, useMemo, useState } from "react"
+import { Link, useNavigate, useParams } from "react-router-dom"
 import { DAY_LABELS, formatTime, type Course } from "../lib/courses"
 import { getCourseWithSections, getTermInfo } from "../lib/catalog"
 import { useTimetable } from "../lib/timetable"
+import { ALL_TERM_IDS, useDegreePlan } from "../lib/degreePlan"
+import { PREREQS, getLeadsTo } from "../lib/requirements"
 import { glassCard, goldButton, glassButton } from "../lib/ui"
 
 export default function CourseInfoPage() {
   const { code } = useParams<{ code: string }>()
+  const navigate = useNavigate()
   const decoded = code ? decodeURIComponent(code) : ""
 
   const [course, setCourse] = useState<Course | null>(null)
   const [termCode, setTermCode] = useState("")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [planTerm, setPlanTerm] = useState("1A")
 
   const { has, add, remove } = useTimetable()
+  const { plan, addCourse } = useDegreePlan()
+
+  // Everything the student has placed in their plan — used to colour prereqs.
+  const have = useMemo(() => {
+    const set = new Set<string>()
+    for (const list of Object.values(plan)) for (const c of list) set.add(c.code)
+    return set
+  }, [plan])
 
   useEffect(() => {
     let active = true
@@ -37,6 +49,9 @@ export default function CourseInfoPage() {
     }
   }, [decoded])
 
+  const prereqs = PREREQS[decoded] ?? []
+  const leadsTo = useMemo(() => getLeadsTo(decoded), [decoded])
+
   if (loading) {
     return (
       <div className="flex justify-center py-20 text-zinc-400">
@@ -58,6 +73,15 @@ export default function CourseInfoPage() {
     )
   }
 
+  // Colour a prerequisite chip: red missing, yellow needs grade, green met.
+  const chipClass = (pcode: string, minGrade?: number) => {
+    if (!have.has(pcode)) return "border-red-500/40 bg-red-500/10 text-red-300"
+    if (minGrade) return "border-yellow-500/40 bg-yellow-500/10 text-yellow-300"
+    return "border-green-500/40 bg-green-500/10 text-green-300"
+  }
+
+  const alreadyPlanned = have.has(course.code)
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <Link to="/app/courses" className="inline-block text-sm text-yellow-400 hover:text-yellow-300">
@@ -71,12 +95,91 @@ export default function CourseInfoPage() {
         {course.description && (
           <p className="mt-3 text-sm leading-relaxed text-zinc-400">{course.description}</p>
         )}
-        {(course.requirements || course.prereqs.length > 0) && (
+        {course.requirements && (
           <p className="mt-3 text-sm text-zinc-500">
-            <span className="font-semibold text-zinc-400">Requirements:</span>{" "}
-            {course.requirements ?? course.prereqs.join(", ")}
+            <span className="font-semibold text-zinc-400">Requirements:</span> {course.requirements}
           </p>
         )}
+
+        {/* Prerequisites */}
+        {prereqs.length > 0 && (
+          <div className="mt-4">
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-zinc-500">
+              Prerequisites
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {prereqs.map((p) => (
+                <Link
+                  key={p.code}
+                  to={`/app/courses/${encodeURIComponent(p.code)}`}
+                  title={
+                    !have.has(p.code)
+                      ? "You haven't planned this yet"
+                      : p.minGrade
+                      ? `Needs at least ${p.minGrade}%`
+                      : "Requirement met"
+                  }
+                  className={`rounded-full border px-2.5 py-1 text-xs font-mono font-semibold transition hover:brightness-125 ${chipClass(
+                    p.code,
+                    p.minGrade
+                  )}`}
+                >
+                  {p.code}
+                  {p.minGrade ? ` ≥${p.minGrade}%` : ""}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Leads to */}
+        {leadsTo.length > 0 && (
+          <div className="mt-4">
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-zinc-500">
+              Leads to
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {leadsTo.map((lc) => (
+                <Link
+                  key={lc}
+                  to={`/app/courses/${encodeURIComponent(lc)}`}
+                  className="rounded-full border border-white/[0.1] bg-white/[0.04] px-2.5 py-1 font-mono text-xs font-semibold text-zinc-300 transition hover:border-yellow-500/40 hover:text-yellow-300"
+                >
+                  {lc}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Add to degree planner */}
+        <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-white/[0.06] pt-4">
+          <span className="text-sm text-zinc-400">Add to degree planner:</span>
+          <select
+            value={planTerm}
+            onChange={(e) => setPlanTerm(e.target.value)}
+            className="rounded-lg border border-white/[0.08] bg-white/[0.05] px-3 py-1.5 text-sm text-white outline-none focus:border-yellow-500/60"
+          >
+            {ALL_TERM_IDS.map((t) => (
+              <option key={t} value={t} className="bg-zinc-900">
+                {t}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => addCourse(planTerm, { code: course.code, name: course.name })}
+            disabled={alreadyPlanned}
+            className={`${goldButton} px-4 py-1.5 text-sm`}
+          >
+            {alreadyPlanned ? "In your plan" : "Add"}
+          </button>
+          <button
+            onClick={() => navigate("/app/planner")}
+            className={`${glassButton} px-4 py-1.5 text-sm font-medium`}
+          >
+            Open planner
+          </button>
+        </div>
       </div>
 
       {/* Sections */}
