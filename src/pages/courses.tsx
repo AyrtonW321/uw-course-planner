@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
-import SelectMenu from "../components/SelectMenu"
+import Combobox from "../components/Combobox"
 import {
   getTermInfo,
   listCoursesBySubject,
@@ -97,12 +97,12 @@ export default function CoursesPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[200px_1fr]">
-        <SelectMenu
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[220px_1fr]">
+        <Combobox
           label="Subject"
           value={subject}
-          placeholder="Subject"
-          options={subjects.map((s) => s.code)}
+          placeholder="Type a subject (e.g. CS)"
+          options={subjects.map((s) => ({ value: s.code, label: s.name }))}
           onChange={(code) => {
             setSubject(code)
             setFilter("")
@@ -138,12 +138,13 @@ export default function CoursesPage() {
           <p className="text-xs text-zinc-600">
             {results.length} course{results.length === 1 ? "" : "s"}
           </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="max-h-[34rem] overflow-y-auto rounded-2xl border border-white/[0.06] bg-white/[0.01] p-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {results.map((c) => (
               <Link
                 key={c.code}
                 to={`/app/courses/${encodeURIComponent(c.code)}`}
-                className={`${glassCard} group block p-5 transition hover:border-yellow-500/30 hover:bg-white/[0.06]`}
+                className={`${glassCard} group block p-4 transition hover:border-yellow-500/30 hover:bg-white/[0.06]`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -175,10 +176,11 @@ export default function CoursesPage() {
             ))}
 
             {results.length === 0 && (
-              <div className={`${glassCard} p-8 text-center text-sm text-zinc-500 sm:col-span-2`}>
+              <div className={`${glassCard} p-8 text-center text-sm text-zinc-500 sm:col-span-2 lg:col-span-3`}>
                 No courses found.
               </div>
             )}
+          </div>
           </div>
         </>
       )}
