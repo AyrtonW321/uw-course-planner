@@ -17,7 +17,7 @@ function greeting() {
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5 backdrop-blur-md ${className}`}>
+    <div className={`glass rounded-2xl p-5 ${className}`}>
       {children}
     </div>
   )

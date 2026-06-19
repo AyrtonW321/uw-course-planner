@@ -214,7 +214,7 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black px-4">
+    <div className="app-bg relative flex min-h-screen items-center justify-center overflow-hidden px-4">
       <ConstellationCanvas />
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
         <div className="h-[600px] w-[600px] rounded-full bg-yellow-500/5 blur-[100px]" />
@@ -234,7 +234,7 @@ export default function Onboarding() {
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-8 py-8 shadow-2xl backdrop-blur-md">
+        <div className="glass rounded-2xl px-8 py-8">
           <p className="text-xs font-semibold uppercase tracking-widest text-yellow-400/80">
             Step {step + 1} of {total}
           </p>

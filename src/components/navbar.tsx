@@ -34,7 +34,7 @@ export default function NavBar({ user }: NavBarProps) {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-black/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-white/[0.08] bg-black/40 backdrop-blur-2xl backdrop-saturate-150">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         {/* Left: logo + name */}
         <Link to="/app" className="flex items-center gap-2.5">
@@ -62,7 +62,7 @@ export default function NavBar({ user }: NavBarProps) {
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-1 transition hover:bg-white/[0.08]"
+            className="glass glass-hover flex items-center gap-2 rounded-full px-2 py-1"
             aria-label="Open user menu"
           >
             <img
@@ -80,7 +80,7 @@ export default function NavBar({ user }: NavBarProps) {
           </button>
 
           {open && (
-            <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-white/[0.08] bg-zinc-950 shadow-2xl">
+            <div className="glass-pop absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl">
               <div className="px-4 py-3">
                 <p className="truncate text-sm font-medium text-white">{displayName}</p>
                 <p className="truncate text-xs text-zinc-500">{user.email}</p>

@@ -77,7 +77,7 @@ export default function Login() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-black px-4 overflow-hidden">
+    <div className="app-bg relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
       <ConstellationCanvas />
 
       {/* Radial glow behind card */}
@@ -100,7 +100,7 @@ export default function Login() {
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] px-8 py-8 shadow-2xl backdrop-blur-md">
+        <div className="glass rounded-2xl px-8 py-8">
           {error && (
             <div className="mb-5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
               {error}
@@ -116,7 +116,7 @@ export default function Login() {
               <input
                 type="email"
                 placeholder="you@uwaterloo.ca"
-                className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none backdrop-blur-md transition focus:border-yellow-500/60 focus:ring-2 focus:ring-yellow-500/10"
+                className="w-full rounded-lg glass-input px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
@@ -133,7 +133,7 @@ export default function Login() {
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 pr-11 text-sm text-white placeholder-zinc-600 outline-none backdrop-blur-md transition focus:border-yellow-500/60 focus:ring-2 focus:ring-yellow-500/10"
+                  className="w-full rounded-lg glass-input px-4 py-2.5 pr-11 text-sm text-white placeholder-zinc-600 outline-none"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"

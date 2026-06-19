@@ -26,7 +26,7 @@ export default function MainPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="app-bg min-h-screen">
       <NavBar user={user} />
       <main className="mx-auto max-w-6xl px-4 py-8 text-white">
         <Outlet />

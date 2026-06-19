@@ -116,7 +116,7 @@ export default function CourseSearch({ placeholder = "Add course…", onPick }: 
               left: rect!.left,
               width: rect!.width,
             }}
-            className="z-[100] max-h-56 overflow-y-auto rounded-lg border border-white/[0.08] bg-zinc-950/95 shadow-2xl backdrop-blur-xl"
+            className="glass-pop z-[100] max-h-56 overflow-y-auto rounded-xl"
           >
             {matches.map((c, i) => (
               <button

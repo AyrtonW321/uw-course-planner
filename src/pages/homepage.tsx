@@ -3,7 +3,7 @@ import ConstellationCanvas from "../components/ConstellationCanvas"
 
 export default function HomePage() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-black text-white flex items-center justify-center px-4">
+    <div className="app-bg relative min-h-screen overflow-hidden text-white flex items-center justify-center px-4">
       <ConstellationCanvas />
 
       {/* Glow */}

@@ -91,11 +91,11 @@ export default function Combobox({
               setOpen(false)
             }
           }}
-          className="w-full rounded-lg border border-white/[0.08] bg-white/[0.05] px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none backdrop-blur-md transition focus:border-yellow-500/60 focus:ring-2 focus:ring-yellow-500/10"
+          className="glass-input w-full rounded-xl px-4 py-2.5 text-sm text-white outline-none"
         />
 
         {open && filtered.length > 0 && (
-          <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto rounded-lg border border-white/[0.08] bg-zinc-950/95 shadow-2xl backdrop-blur-xl">
+          <div className="glass-pop absolute z-20 mt-2 max-h-60 w-full overflow-y-auto rounded-xl">
             {filtered.map((o, i) => (
               <button
                 key={o.value}

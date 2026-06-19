@@ -38,7 +38,7 @@ function Bar({ label, value, color }: { label: string; value: number | null; col
 /** Full ratings card for the course detail page. */
 export function RatingCard({ code, rating }: { code: string; rating: FlowRating | null }) {
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-5 shadow-2xl backdrop-blur-md">
+    <div className="glass rounded-2xl p-5">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-white">UW Flow Ratings</h2>
         <a

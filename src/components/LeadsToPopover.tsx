@@ -69,7 +69,7 @@ export default function LeadsToPopover({ codes }: Props) {
           <div
             ref={menuRef}
             style={{ position: "fixed", top: rect.bottom + 4, left: rect.left }}
-            className="z-[100] min-w-[8rem] overflow-hidden rounded-lg border border-white/[0.08] bg-zinc-950/95 shadow-2xl backdrop-blur-xl"
+            className="glass-pop z-[100] min-w-[8rem] overflow-hidden rounded-xl"
           >
             <p className="border-b border-white/[0.06] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
               Leads to
