@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { getTermInfo, listAllCourses } from "../lib/catalog"
 import type { Course } from "../lib/courses"
 import { glassInput } from "../lib/ui"
@@ -10,44 +11,63 @@ type Props = {
 
 /**
  * Type-ahead course picker. Loads the whole-term catalog once and shows
- * matching courses in a dropdown; clicking one calls `onPick`.
+ * matching courses in a dropdown. The menu is rendered in a portal with fixed
+ * positioning so it never gets clipped by, or paint under, sibling cards.
  */
 export default function CourseSearch({ placeholder = "Add course…", onPick }: Props) {
   const [all, setAll] = useState<Course[]>([])
   const [query, setQuery] = useState("")
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
-  const ref = useRef<HTMLDivElement | null>(null)
+  const [rect, setRect] = useState<DOMRect | null>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    let active = true
+    let alive = true
     getTermInfo()
       .then((t) => listAllCourses(t.termCode))
-      .then((cs) => active && setAll(cs))
+      .then((cs) => alive && setAll(cs))
       .catch(() => {})
     return () => {
-      active = false
+      alive = false
     }
-  }, [])
-
-  useEffect(() => {
-    const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener("mousedown", onDoc)
-    return () => document.removeEventListener("mousedown", onDoc)
   }, [])
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (q.length < 2) return []
     return all
-      .filter(
-        (c) =>
-          c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q)
-      )
+      .filter((c) => c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q))
       .slice(0, 20)
   }, [query, all])
+
+  const updateRect = () => {
+    if (inputRef.current) setRect(inputRef.current.getBoundingClientRect())
+  }
+
+  useLayoutEffect(() => {
+    if (open) updateRect()
+  }, [open, matches.length])
+
+  // Reposition on scroll/resize while open; close on outside click.
+  useEffect(() => {
+    if (!open) return
+    const onMove = () => updateRect()
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (inputRef.current?.contains(t) || menuRef.current?.contains(t)) return
+      setOpen(false)
+    }
+    window.addEventListener("scroll", onMove, true)
+    window.addEventListener("resize", onMove)
+    document.addEventListener("mousedown", onDown)
+    return () => {
+      window.removeEventListener("scroll", onMove, true)
+      window.removeEventListener("resize", onMove)
+      document.removeEventListener("mousedown", onDown)
+    }
+  }, [open])
 
   const pick = (c: Course) => {
     onPick({ code: c.code, name: c.name })
@@ -55,9 +75,12 @@ export default function CourseSearch({ placeholder = "Add course…", onPick }: 
     setOpen(false)
   }
 
+  const showMenu = open && matches.length > 0 && rect
+
   return (
-    <div className="relative" ref={ref}>
+    <>
       <input
+        ref={inputRef}
         value={query}
         onChange={(e) => {
           setQuery(e.target.value)
@@ -83,24 +106,35 @@ export default function CourseSearch({ placeholder = "Add course…", onPick }: 
         className={`${glassInput} py-1.5 text-xs`}
       />
 
-      {open && matches.length > 0 && (
-        <div className="absolute z-30 mt-1.5 max-h-56 w-full overflow-y-auto rounded-lg border border-white/[0.08] bg-zinc-950/95 shadow-2xl backdrop-blur-xl">
-          {matches.map((c, i) => (
-            <button
-              key={c.code}
-              type="button"
-              onMouseEnter={() => setActive(i)}
-              onClick={() => pick(c)}
-              className={`block w-full px-3 py-2 text-left text-xs transition ${
-                i === active ? "bg-white/[0.06]" : ""
-              }`}
-            >
-              <span className="font-mono font-bold text-yellow-400">{c.code}</span>
-              <span className="ml-2 text-zinc-400">{c.name}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+      {showMenu &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{
+              position: "fixed",
+              top: rect!.bottom + 4,
+              left: rect!.left,
+              width: rect!.width,
+            }}
+            className="z-[100] max-h-56 overflow-y-auto rounded-lg border border-white/[0.08] bg-zinc-950/95 shadow-2xl backdrop-blur-xl"
+          >
+            {matches.map((c, i) => (
+              <button
+                key={c.code}
+                type="button"
+                onMouseEnter={() => setActive(i)}
+                onClick={() => pick(c)}
+                className={`block w-full px-3 py-2 text-left text-xs transition ${
+                  i === active ? "bg-white/[0.06]" : ""
+                }`}
+              >
+                <span className="font-mono font-bold text-yellow-400">{c.code}</span>
+                <span className="ml-2 text-zinc-400">{c.name}</span>
+              </button>
+            ))}
+          </div>,
+          document.body
+        )}
+    </>
   )
 }
