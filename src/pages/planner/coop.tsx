@@ -1,10 +1,23 @@
+import { useState } from "react"
 import CourseSearch from "../../components/CourseSearch"
-import { COOP_SEQUENCES, getSequence, useCoopPlan } from "../../lib/coop"
-import { glassCard, glassInput } from "../../lib/ui"
+import { COOP_SEQUENCES, useCoopPlan } from "../../lib/coop"
+import { glassCard, glassInput, glassButton } from "../../lib/ui"
 
 export default function CoopPage() {
-  const { plan, loading, setSequence, setWork, addOnlineCourse, removeOnlineCourse } =
-    useCoopPlan()
+  const {
+    plan,
+    slots,
+    loading,
+    setSequence,
+    reorderSlots,
+    addWorkTerm,
+    removeSlot,
+    setWork,
+    addOnlineCourse,
+    removeOnlineCourse,
+  } = useCoopPlan()
+
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
 
   if (loading) {
     return (
@@ -14,69 +27,96 @@ export default function CoopPage() {
     )
   }
 
-  const seq = getSequence(plan.sequenceId)
-  const workSlots = seq.slots.filter((s) => s.type === "work")
+  const workSlots = slots.filter((s) => s.type === "work")
+
+  const slotStyle = (type: string) =>
+    type === "study"
+      ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-300"
+      : type === "work"
+      ? "border-sky-500/30 bg-sky-500/10 text-sky-300"
+      : "border-white/[0.1] bg-white/[0.04] text-zinc-400"
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-white">Co-op</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          Track your work terms, employers, and any online courses you took.
+          Pick a Math sequence or build your own, and track each work term.
         </p>
       </div>
 
       {/* Sequence selector */}
       <div className={`${glassCard} p-5`}>
         <h2 className="mb-3 text-sm font-semibold text-white">Co-op Sequence</h2>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {COOP_SEQUENCES.map((s) => (
             <button
               key={s.id}
               onClick={() => setSequence(s.id)}
               className={`rounded-lg border px-4 py-3 text-left transition ${
-                s.id === plan.sequenceId
+                s.id === plan.sequenceId && !plan.slots
                   ? "border-yellow-500/60 bg-yellow-500/10"
                   : "border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06]"
               }`}
             >
-              <p className={`text-sm font-semibold ${s.id === plan.sequenceId ? "text-yellow-400" : "text-white"}`}>
-                {s.label}
-              </p>
+              <p className="text-sm font-semibold text-white">{s.label}</p>
               <p className="mt-0.5 text-xs text-zinc-500">{s.description}</p>
             </button>
           ))}
         </div>
+        <p className="mt-3 text-xs text-zinc-600">
+          Picking a sequence resets your custom layout below.
+        </p>
+      </div>
 
-        {/* Sequence timeline */}
-        <div className="mt-5 flex flex-wrap gap-1.5">
-          {seq.slots.map((slot) => (
-            <span
+      {/* Manual schedule editor (drag to reorder) */}
+      <div className={`${glassCard} p-5`}>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-white">Your Schedule</h2>
+          <button onClick={addWorkTerm} className={`${glassButton} px-3 py-1.5 text-xs font-medium`}>
+            + Add work term
+          </button>
+        </div>
+        <p className="mb-3 text-xs text-zinc-600">Drag terms to reorder your sequence.</p>
+
+        <div className="flex flex-wrap gap-2">
+          {slots.map((slot, i) => (
+            <div
               key={slot.id}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium ${
-                slot.type === "study"
-                  ? "border border-yellow-500/30 bg-yellow-500/10 text-yellow-300"
-                  : "border border-sky-500/30 bg-sky-500/10 text-sky-300"
-              }`}
+              draggable
+              onDragStart={() => setDragIndex(i)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => {
+                if (dragIndex !== null) reorderSlots(dragIndex, i)
+                setDragIndex(null)
+              }}
+              onDragEnd={() => setDragIndex(null)}
+              className={`group flex cursor-grab items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium active:cursor-grabbing ${slotStyle(
+                slot.type
+              )} ${dragIndex === i ? "opacity-50" : ""}`}
             >
-              {slot.label}
-            </span>
+              <span>{slot.label}</span>
+              <button
+                onClick={() => removeSlot(slot.id)}
+                className="text-zinc-500 opacity-0 transition hover:text-red-400 group-hover:opacity-100"
+                aria-label={`Remove ${slot.label}`}
+              >
+                ✕
+              </button>
+            </div>
           ))}
         </div>
         <div className="mt-3 flex items-center gap-4 text-xs text-zinc-500">
-          <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded bg-yellow-500/60" /> Study term
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded bg-sky-500/60" /> Work term
-          </span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-yellow-500/60" /> Study</span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-sky-500/60" /> Work</span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-zinc-500/60" /> Off</span>
         </div>
       </div>
 
       {/* Work terms */}
       {workSlots.length === 0 ? (
         <div className={`${glassCard} p-6 text-sm text-zinc-500`}>
-          This sequence has no work terms.
+          This schedule has no work terms. Use “Add work term” above.
         </div>
       ) : (
         <div className="space-y-4">
@@ -114,7 +154,6 @@ export default function CoopPage() {
                   />
                 )}
 
-                {/* Online courses during the work term */}
                 <div className="mt-4">
                   <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-zinc-500">
                     Online courses taken

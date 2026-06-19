@@ -39,8 +39,8 @@ export default function Dashboard() {
   const { user, meta } = useProfileMeta()
   const { entries } = useTimetable()
   const { totalCourses } = useDegreePlan()
-  const { plan: coopPlan } = useCoopPlan()
-  const sequence = getSequence(coopPlan.sequenceId)
+  const { plan: coopPlan, slots: coopSlots } = useCoopPlan()
+  const sequenceLabel = coopPlan.slots?.length ? "Custom" : getSequence(coopPlan.sequenceId).label
 
   const name = user?.displayName?.split(" ")[0] || user?.email?.split("@")[0] || "there"
 
@@ -146,20 +146,22 @@ export default function Dashboard() {
         <Card>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-white">
-              Co-op Sequence · {sequence.label}
+              Co-op Sequence · {sequenceLabel}
             </h2>
             <Link to="/app/planner/coop" className="text-xs text-yellow-400 hover:text-yellow-300">
               Manage
             </Link>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {sequence.slots.map((slot) => (
+            {coopSlots.map((slot) => (
               <span
                 key={slot.id}
                 className={`rounded-md px-2.5 py-1 text-xs font-medium ${
                   slot.type === "study"
                     ? "border border-yellow-500/30 bg-yellow-500/10 text-yellow-300"
-                    : "border border-sky-500/30 bg-sky-500/10 text-sky-300"
+                    : slot.type === "work"
+                    ? "border border-sky-500/30 bg-sky-500/10 text-sky-300"
+                    : "border border-white/[0.1] bg-white/[0.04] text-zinc-400"
                 }`}
               >
                 {slot.label}
