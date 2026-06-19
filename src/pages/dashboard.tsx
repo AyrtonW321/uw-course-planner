@@ -1,29 +1,11 @@
+import { useMemo } from "react"
 import { Link } from "react-router-dom"
-import { useAuthUser } from "../lib/useAuthUser"
+import { useProfileMeta } from "../lib/profile"
+import { useTimetable } from "../lib/timetable"
+import { useDegreePlan } from "../lib/degreePlan"
 
-/**
- * Dashboard
- * ---------
- * NOTE: The figures below are placeholders. Wire them to Firestore
- * (users/{uid}: completedCourses, plannedCourses, program, etc.) once
- * the data layer is in place. Each card is built to drop in real data.
- */
-
-// --- Placeholder data (replace with Firestore reads) ---
-const PROGRESS = {
-  program: "BMath — Applied Mathematics",
-  creditsDone: 9.5,
-  creditsTotal: 20,
-  currentTerm: "2A",
-  average: 84,
-}
-
-const CURRENT_TERM_COURSES = [
-  { code: "AMATH 250", name: "Intro to Differential Equations", status: "eligible" },
-  { code: "CS 245", name: "Logic and Computation", status: "eligible" },
-  { code: "STAT 230", name: "Probability", status: "eligible" },
-  { code: "AMATH 242", name: "Intro to Computational Math", status: "warning" },
-] as const
+// Rough target used only for the progress bar until real audit data exists.
+const TARGET_COURSES = 40
 
 function greeting() {
   const h = new Date().getHours()
@@ -32,17 +14,9 @@ function greeting() {
   return "Good evening"
 }
 
-function Card({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode
-  className?: string
-}) {
+function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div
-      className={`rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5 backdrop-blur-md ${className}`}
-    >
+    <div className={`rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5 backdrop-blur-md ${className}`}>
       {children}
     </div>
   )
@@ -51,20 +25,35 @@ function Card({
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <Card>
-      <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
-        {label}
+      <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">{label}</p>
+      <p className="mt-2 truncate text-2xl font-bold text-white" title={value}>
+        {value}
       </p>
-      <p className="mt-2 text-2xl font-bold text-white">{value}</p>
       {sub && <p className="mt-0.5 text-xs text-zinc-500">{sub}</p>}
     </Card>
   )
 }
 
 export default function Dashboard() {
-  const { user } = useAuthUser()
+  const { user, meta } = useProfileMeta()
+  const { entries } = useTimetable()
+  const { totalCourses } = useDegreePlan()
+
   const name = user?.displayName?.split(" ")[0] || user?.email?.split("@")[0] || "there"
 
-  const pct = Math.round((PROGRESS.creditsDone / PROGRESS.creditsTotal) * 100)
+  const program = meta?.program || "Your program"
+  const subtitle = [meta?.faculty, meta?.program].filter(Boolean).join(" · ") || "Set up your profile"
+  const grad = meta?.gradTerm && meta?.gradYear ? `${meta.gradTerm} ${meta.gradYear}` : "—"
+  const coop = meta?.coop === "no" ? "Regular" : "Co-op"
+
+  // Unique courses currently on the timetable.
+  const timetableCourses = useMemo(() => {
+    const seen = new Map<string, string>()
+    for (const e of entries) if (!seen.has(e.code)) seen.set(e.code, e.title)
+    return [...seen.entries()].map(([code, title]) => ({ code, title }))
+  }, [entries])
+
+  const pct = Math.min(100, Math.round((totalCourses / TARGET_COURSES) * 100))
 
   return (
     <div className="space-y-8">
@@ -74,26 +63,22 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold tracking-tight text-white">
             {greeting()}, {name}
           </h1>
-          <p className="mt-1 text-sm text-zinc-500">{PROGRESS.program}</p>
+          <p className="mt-1 text-sm text-zinc-500">{subtitle}</p>
         </div>
         <Link
-          to="/app/timetable"
+          to="/app/planner"
           className="rounded-lg bg-yellow-400 px-4 py-2 text-sm font-bold text-black transition hover:bg-yellow-300"
         >
-          Open Planner
+          Open Degree Planner
         </Link>
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Current Term" value={PROGRESS.currentTerm} sub="Fall 2026" />
-        <StatCard
-          label="Credits"
-          value={`${PROGRESS.creditsDone} / ${PROGRESS.creditsTotal}`}
-          sub={`${pct}% complete`}
-        />
-        <StatCard label="Average" value={`${PROGRESS.average}%`} sub="Cumulative" />
-        <StatCard label="Courses Planned" value="4" sub="This term" />
+        <StatCard label="Program" value={program} sub={meta?.faculty || ""} />
+        <StatCard label="Co-op" value={coop} />
+        <StatCard label="Graduation" value={grad} />
+        <StatCard label="On Timetable" value={String(timetableCourses.length)} sub="courses" />
       </div>
 
       {/* Main grid */}
@@ -112,20 +97,24 @@ export default function Dashboard() {
           </div>
           <div className="mt-4 grid grid-cols-3 gap-3 text-center">
             <div className="rounded-lg bg-white/[0.03] py-3">
-              <p className="text-lg font-bold text-white">{PROGRESS.creditsDone}</p>
-              <p className="text-xs text-zinc-500">Completed</p>
+              <p className="text-lg font-bold text-white">{totalCourses}</p>
+              <p className="text-xs text-zinc-500">Planned</p>
             </div>
             <div className="rounded-lg bg-white/[0.03] py-3">
-              <p className="text-lg font-bold text-white">
-                {(PROGRESS.creditsTotal - PROGRESS.creditsDone).toFixed(1)}
-              </p>
-              <p className="text-xs text-zinc-500">Remaining</p>
+              <p className="text-lg font-bold text-white">{Math.max(0, TARGET_COURSES - totalCourses)}</p>
+              <p className="text-xs text-zinc-500">Remaining (est.)</p>
             </div>
             <div className="rounded-lg bg-white/[0.03] py-3">
-              <p className="text-lg font-bold text-white">~5</p>
-              <p className="text-xs text-zinc-500">Terms left</p>
+              <p className="text-lg font-bold text-white">{grad}</p>
+              <p className="text-xs text-zinc-500">Target grad</p>
             </div>
           </div>
+          <Link
+            to="/app/planner"
+            className="mt-4 inline-block text-xs text-yellow-400 hover:text-yellow-300"
+          >
+            Plan your terms →
+          </Link>
         </Card>
 
         {/* AI Advisor teaser */}
@@ -149,40 +138,34 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Current term + quick actions */}
+      {/* Timetable + quick actions */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Current term courses */}
         <Card className="lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-white">
-              Current Term — {PROGRESS.currentTerm}
-            </h2>
-            <Link to="/app/courses" className="text-xs text-yellow-400 hover:text-yellow-300">
-              Edit
+            <h2 className="text-sm font-semibold text-white">Your Timetable</h2>
+            <Link to="/app/timetable" className="text-xs text-yellow-400 hover:text-yellow-300">
+              View
             </Link>
           </div>
-          <ul className="divide-y divide-white/[0.05]">
-            {CURRENT_TERM_COURSES.map((c) => (
-              <li key={c.code} className="flex items-center gap-3 py-2.5">
-                <span
-                  className={`h-2 w-2 flex-shrink-0 rounded-full ${
-                    c.status === "eligible" ? "bg-green-400" : "bg-yellow-400"
-                  }`}
-                  title={c.status === "eligible" ? "Prerequisites met" : "Check prerequisites"}
-                />
-                <span className="font-mono text-sm font-medium text-white">{c.code}</span>
-                <span className="truncate text-sm text-zinc-500">{c.name}</span>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-3 flex items-center gap-4 text-xs text-zinc-600">
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-green-400" /> Eligible
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-yellow-400" /> Check prereqs
-            </span>
-          </div>
+          {timetableCourses.length === 0 ? (
+            <p className="py-4 text-sm text-zinc-500">
+              No courses on your timetable yet.{" "}
+              <Link to="/app/courses" className="text-yellow-400 hover:text-yellow-300">
+                Browse courses
+              </Link>
+              .
+            </p>
+          ) : (
+            <ul className="divide-y divide-white/[0.05]">
+              {timetableCourses.map((c) => (
+                <li key={c.code} className="flex items-center gap-3 py-2.5">
+                  <span className="h-2 w-2 flex-shrink-0 rounded-full bg-yellow-400" />
+                  <span className="font-mono text-sm font-medium text-white">{c.code}</span>
+                  <span className="truncate text-sm text-zinc-500">{c.title}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
 
         {/* Quick actions */}
@@ -190,9 +173,9 @@ export default function Dashboard() {
           <h2 className="mb-4 text-sm font-semibold text-white">Quick Actions</h2>
           <div className="space-y-2">
             {[
-              { label: "Add a course", to: "/app/courses" },
+              { label: "Browse courses", to: "/app/courses" },
+              { label: "Degree planner", to: "/app/planner" },
               { label: "View timetable", to: "/app/timetable" },
-              { label: "Degree audit", to: "/app" },
               { label: "Profile settings", to: "/app/profile" },
             ].map((a) => (
               <Link
