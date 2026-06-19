@@ -6,7 +6,8 @@
  * can be swapped onto a live source later with minimal changes.
  */
 
-export type SectionType = "LEC" | "TUT" | "LAB"
+/** Component code: LEC, TUT, LAB, SEM, TST, PRJ, … (open-ended in real data). */
+export type SectionType = string
 
 /** Day index: 0 = Monday … 4 = Friday. */
 export type DayIndex = 0 | 1 | 2 | 3 | 4
@@ -34,8 +35,12 @@ export type Course = {
   code: string
   name: string
   subject: string
-  credit: number
+  /** Units/credit isn't exposed by the UW course list, so it's optional. */
+  credit?: number
   description: string
+  /** Free-text prereq/coreq/antireq line from UW (`requirementsDescription`). */
+  requirements?: string
+  /** Structured prereqs (mock data only). */
   prereqs: string[]
   sections: Section[]
 }
