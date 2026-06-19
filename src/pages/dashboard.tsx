@@ -157,7 +157,7 @@ export default function Dashboard() {
             <h2 className="text-sm font-semibold text-white">
               Current Term — {PROGRESS.currentTerm}
             </h2>
-            <Link to="/app/timetable" className="text-xs text-yellow-400 hover:text-yellow-300">
+            <Link to="/app/courses" className="text-xs text-yellow-400 hover:text-yellow-300">
               Edit
             </Link>
           </div>
@@ -190,7 +190,7 @@ export default function Dashboard() {
           <h2 className="mb-4 text-sm font-semibold text-white">Quick Actions</h2>
           <div className="space-y-2">
             {[
-              { label: "Add a course", to: "/app/timetable" },
+              { label: "Add a course", to: "/app/courses" },
               { label: "View timetable", to: "/app/timetable" },
               { label: "Degree audit", to: "/app" },
               { label: "Profile settings", to: "/app/profile" },
