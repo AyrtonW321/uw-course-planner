@@ -7,6 +7,8 @@ import { ALL_TERM_IDS, useDegreePlan } from "../lib/degreePlan"
 import { PREREQS } from "../lib/requirements"
 import { parsePrereqs } from "../lib/prereqParser"
 import { usePrereqIndex } from "../lib/usePrereq"
+import { useCourseRating } from "../lib/uwflow"
+import { RatingCard } from "../components/CourseRating"
 import SelectMenu from "../components/SelectMenu"
 import { glassCard, goldButton, glassButton } from "../lib/ui"
 
@@ -24,6 +26,7 @@ export default function CourseInfoPage() {
   const { has, add, remove } = useTimetable()
   const { plan, addCourse } = useDegreePlan()
   const { leadsTo: leadsToIndex } = usePrereqIndex()
+  const { rating } = useCourseRating(decoded)
 
   // Everything the student has placed in their plan — used to colour prereqs.
   const have = useMemo(() => {
@@ -189,6 +192,9 @@ export default function CourseInfoPage() {
           </div>
         </div>
       </div>
+
+      {/* UW Flow ratings */}
+      <RatingCard code={course.code} rating={rating} />
 
       {/* Sections */}
       <div className="space-y-3">

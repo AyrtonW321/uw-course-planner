@@ -9,6 +9,8 @@ import {
 } from "../lib/catalog"
 import type { Course } from "../lib/courses"
 import { useTimetable } from "../lib/timetable"
+import { useCourseRatings } from "../lib/uwflow"
+import { RatingBadges } from "../components/CourseRating"
 import { glassCard, glassInput } from "../lib/ui"
 
 export default function CoursesPage() {
@@ -79,6 +81,9 @@ export default function CoursesPage() {
         c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q)
     )
   }, [courses, filter])
+
+  // UW Flow ratings for the courses currently shown.
+  const ratings = useCourseRatings(useMemo(() => results.map((c) => c.code), [results]))
 
   const onFilter = (value: string) => {
     setFilter(value)
@@ -164,6 +169,9 @@ export default function CoursesPage() {
                     {c.description}
                   </p>
                 )}
+                <div className="mt-2">
+                  <RatingBadges rating={ratings.get(c.code) ?? null} />
+                </div>
                 <div className="mt-3 flex items-center gap-3 text-xs text-zinc-600">
                   {c.requirements && (
                     <span className="line-clamp-1">{c.requirements}</span>
