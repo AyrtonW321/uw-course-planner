@@ -82,7 +82,28 @@ export function useDegreePlan() {
     [user]
   )
 
+  /** Move a course from one term to another (drag and drop). */
+  const moveCourse = useCallback(
+    (fromTerm: string, toTerm: string, code: string) => {
+      if (fromTerm === toTerm) return
+      setPlan((prev) => {
+        const course = (prev[fromTerm] ?? []).find((c) => c.code === code)
+        if (!course) return prev
+        const toList = prev[toTerm] ?? []
+        if (toList.some((c) => c.code === code)) return prev
+        const next = {
+          ...prev,
+          [fromTerm]: (prev[fromTerm] ?? []).filter((c) => c.code !== code),
+          [toTerm]: [...toList, course],
+        }
+        if (user) setDoc(doc(db, "users", user.uid), { degreePlan: next }, { merge: true })
+        return next
+      })
+    },
+    [user]
+  )
+
   const totalCourses = Object.values(plan).reduce((n, list) => n + list.length, 0)
 
-  return { plan, loading: authLoading || loading, addCourse, removeCourse, save, totalCourses }
+  return { plan, loading: authLoading || loading, addCourse, removeCourse, moveCourse, save, totalCourses }
 }
