@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import { useProfileMeta } from "../lib/profile"
 import { useTimetable } from "../lib/timetable"
 import { useDegreePlan } from "../lib/degreePlan"
+import { getSequence, useCoopPlan } from "../lib/coop"
 
 // Rough target used only for the progress bar until real audit data exists.
 const TARGET_COURSES = 40
@@ -38,6 +39,8 @@ export default function Dashboard() {
   const { user, meta } = useProfileMeta()
   const { entries } = useTimetable()
   const { totalCourses } = useDegreePlan()
+  const { plan: coopPlan } = useCoopPlan()
+  const sequence = getSequence(coopPlan.sequenceId)
 
   const name = user?.displayName?.split(" ")[0] || user?.email?.split("@")[0] || "there"
 
@@ -137,6 +140,34 @@ export default function Dashboard() {
           </button>
         </Card>
       </div>
+
+      {/* Co-op sequence strip */}
+      {meta?.coop === "yes" && (
+        <Card>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-white">
+              Co-op Sequence · {sequence.label}
+            </h2>
+            <Link to="/app/planner/coop" className="text-xs text-yellow-400 hover:text-yellow-300">
+              Manage
+            </Link>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {sequence.slots.map((slot) => (
+              <span
+                key={slot.id}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium ${
+                  slot.type === "study"
+                    ? "border border-yellow-500/30 bg-yellow-500/10 text-yellow-300"
+                    : "border border-sky-500/30 bg-sky-500/10 text-sky-300"
+                }`}
+              >
+                {slot.label}
+              </span>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Timetable + quick actions */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

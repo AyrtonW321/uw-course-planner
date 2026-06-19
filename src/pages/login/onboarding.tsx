@@ -10,6 +10,7 @@ import {
   type GradTerm,
   type ProfileMeta,
 } from "../../lib/profile"
+import { COOP_SEQUENCES, defaultSequenceId, saveCoopSequence } from "../../lib/coop"
 import { goldButton, glassButton } from "../../lib/ui"
 
 const FACULTIES = Object.keys(PROGRAMS_BY_FACULTY)
@@ -21,6 +22,7 @@ export default function Onboarding() {
 
   const [step, setStep] = useState(0)
   const [draft, setDraft] = useState<ProfileMeta>(EMPTY_META)
+  const [seqId, setSeqId] = useState(defaultSequenceId("yes"))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -123,6 +125,40 @@ export default function Onboarding() {
         </div>
       ),
     },
+    ...(draft.coop === "yes"
+      ? [
+          {
+            title: "Pick your co-op sequence",
+            subtitle: "How your study and work terms alternate. You can change this later.",
+            valid: true,
+            body: (
+              <div className="space-y-2">
+                {COOP_SEQUENCES.filter((s) => s.id !== "regular").map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setSeqId(s.id)}
+                    className={`w-full rounded-xl border px-4 py-3 text-left transition ${
+                      seqId === s.id
+                        ? "border-yellow-500/60 bg-yellow-500/10"
+                        : "border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06]"
+                    }`}
+                  >
+                    <span
+                      className={`text-sm font-semibold ${
+                        seqId === s.id ? "text-yellow-400" : "text-white"
+                      }`}
+                    >
+                      {s.label}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-zinc-500">{s.description}</span>
+                  </button>
+                ))}
+              </div>
+            ),
+          },
+        ]
+      : []),
     {
       title: "When do you graduate?",
       subtitle: "Your expected graduation term.",
@@ -163,6 +199,7 @@ export default function Onboarding() {
     setSaving(true)
     try {
       await save(draft)
+      if (draft.coop === "yes" && user) await saveCoopSequence(user.uid, seqId)
       navigate("/app", { replace: true })
     } catch (err: any) {
       setError(err?.message ?? "Failed to save your profile. Try again.")
