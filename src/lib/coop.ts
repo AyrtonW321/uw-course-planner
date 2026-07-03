@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react"
-import { doc, getDoc, setDoc } from "firebase/firestore"
+import { useCallback, useMemo } from "react"
+import { doc, setDoc } from "firebase/firestore"
 import { db } from "./firebase"
-import { useAuthUser } from "./useAuthUser"
+import { useUserDoc } from "./userDoc"
 import type { PlannedCourse } from "./degreePlan"
 
 export type SlotType = "study" | "work" | "off"
@@ -119,44 +119,19 @@ export function effectiveSlots(plan: CoopPlan): CoopSlot[] {
 }
 
 export function useCoopPlan() {
-  const { user, loading: authLoading } = useAuthUser()
-  const [plan, setPlan] = useState<CoopPlan>(EMPTY)
-  const [loading, setLoading] = useState(true)
+  const { data, loading, update } = useUserDoc()
 
-  useEffect(() => {
-    let active = true
-    if (authLoading) return
-    if (!user) {
-      setPlan(EMPTY)
-      setLoading(false)
-      return
+  const plan = useMemo<CoopPlan>(() => {
+    const d = data?.coopPlan as Partial<CoopPlan> | undefined
+    return {
+      sequenceId: d?.sequenceId ?? EMPTY.sequenceId,
+      slots: d?.slots,
+      work: d?.work ?? {},
+      onlineCourses: d?.onlineCourses ?? {},
     }
-    setLoading(true)
-    getDoc(doc(db, "users", user.uid))
-      .then((snap) => {
-        if (!active) return
-        const d = snap.data() as { coopPlan?: Partial<CoopPlan> } | undefined
-        setPlan({
-          sequenceId: d?.coopPlan?.sequenceId ?? EMPTY.sequenceId,
-          slots: d?.coopPlan?.slots,
-          work: d?.coopPlan?.work ?? {},
-          onlineCourses: d?.coopPlan?.onlineCourses ?? {},
-        })
-      })
-      .catch(() => active && setPlan(EMPTY))
-      .finally(() => active && setLoading(false))
-    return () => {
-      active = false
-    }
-  }, [user, authLoading])
+  }, [data])
 
-  const persist = useCallback(
-    (next: CoopPlan) => {
-      setPlan(next)
-      if (user) setDoc(doc(db, "users", user.uid), { coopPlan: next }, { merge: true })
-    },
-    [user]
-  )
+  const persist = useCallback((next: CoopPlan) => update({ coopPlan: next }), [update])
 
   // Choosing a stream resets the editable slots to that template.
   const setSequence = useCallback(
@@ -230,7 +205,7 @@ export function useCoopPlan() {
   return {
     plan,
     slots: effectiveSlots(plan),
-    loading: authLoading || loading,
+    loading,
     setSequence,
     setSlots,
     reorderSlots,

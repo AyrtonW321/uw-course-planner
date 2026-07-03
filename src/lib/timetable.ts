@@ -1,7 +1,5 @@
-import { useCallback, useEffect, useState } from "react"
-import { doc, getDoc, setDoc } from "firebase/firestore"
-import { db } from "./firebase"
-import { useAuthUser } from "./useAuthUser"
+import { useCallback, useMemo } from "react"
+import { useUserDoc } from "./userDoc"
 import type { Meeting, SectionType } from "./courses"
 
 /**
@@ -23,67 +21,29 @@ export type TimetableEntry = {
 }
 
 export function useTimetable() {
-  const { user, loading: authLoading } = useAuthUser()
-  const [entries, setEntries] = useState<TimetableEntry[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data, loading, update } = useUserDoc()
 
-  useEffect(() => {
-    let active = true
-    if (authLoading) return
-    if (!user) {
-      setEntries([])
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    getDoc(doc(db, "users", user.uid))
-      .then((snap) => {
-        if (!active) return
-        const data = snap.data() as { timetable?: TimetableEntry[] } | undefined
-        setEntries(Array.isArray(data?.timetable) ? data!.timetable! : [])
-      })
-      .catch(() => {
-        if (active) setEntries([])
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [user, authLoading])
+  const entries = useMemo<TimetableEntry[]>(
+    () => (Array.isArray(data?.timetable) ? (data!.timetable as TimetableEntry[]) : []),
+    [data]
+  )
 
   const persist = useCallback(
-    (next: TimetableEntry[]) => {
-      setEntries(next)
-      if (user) {
-        setDoc(doc(db, "users", user.uid), { timetable: next }, { merge: true })
-      }
-    },
-    [user]
+    (next: TimetableEntry[]) => update({ timetable: next }),
+    [update]
   )
 
   const add = useCallback(
     (entry: TimetableEntry) => {
-      setEntries((prev) => {
-        if (prev.some((e) => e.sectionId === entry.sectionId)) return prev
-        const next = [...prev, entry]
-        if (user) setDoc(doc(db, "users", user.uid), { timetable: next }, { merge: true })
-        return next
-      })
+      if (entries.some((e) => e.sectionId === entry.sectionId)) return
+      persist([...entries, entry])
     },
-    [user]
+    [entries, persist]
   )
 
   const remove = useCallback(
-    (sectionId: string) => {
-      setEntries((prev) => {
-        const next = prev.filter((e) => e.sectionId !== sectionId)
-        if (user) setDoc(doc(db, "users", user.uid), { timetable: next }, { merge: true })
-        return next
-      })
-    },
-    [user]
+    (sectionId: string) => persist(entries.filter((e) => e.sectionId !== sectionId)),
+    [entries, persist]
   )
 
   const has = useCallback(
@@ -91,5 +51,5 @@ export function useTimetable() {
     [entries]
   )
 
-  return { entries, loading: authLoading || loading, add, remove, has, persist }
+  return { entries, loading, add, remove, has, persist }
 }

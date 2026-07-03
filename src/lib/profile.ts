@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react"
-import { doc, getDoc, setDoc } from "firebase/firestore"
+import { useCallback, useMemo } from "react"
+import { doc, getDoc, setDoc, type DocumentData } from "firebase/firestore"
 import { db } from "./firebase"
-import { useAuthUser } from "./useAuthUser"
+import { useUserDoc } from "./userDoc"
 
 export type GradTerm = "Fall" | "Winter" | "Spring"
 
@@ -29,18 +29,22 @@ export function isProfileComplete(m: ProfileMeta | null | undefined): boolean {
   return Boolean(m && m.faculty && m.program && m.gradTerm && m.gradYear)
 }
 
+/** Map a raw user document into a ProfileMeta with defaults. */
+export function metaFromDoc(d: DocumentData | null | undefined): ProfileMeta {
+  return {
+    faculty: d?.faculty ?? "",
+    program: d?.program ?? "",
+    coop: d?.coop ?? "yes",
+    gradTerm: (d?.gradTerm as GradTerm) ?? "",
+    gradYear: d?.gradYear ?? null,
+    currentTerm: d?.currentTerm ?? "",
+  }
+}
+
 export async function loadProfileMeta(uid: string): Promise<ProfileMeta | null> {
   const snap = await getDoc(doc(db, "users", uid))
   if (!snap.exists()) return null
-  const d = snap.data() as Partial<ProfileMeta>
-  return {
-    faculty: d.faculty ?? "",
-    program: d.program ?? "",
-    coop: d.coop ?? "yes",
-    gradTerm: (d.gradTerm as GradTerm) ?? "",
-    gradYear: d.gradYear ?? null,
-    currentTerm: d.currentTerm ?? "",
-  }
+  return metaFromDoc(snap.data())
 }
 
 export async function saveProfileMeta(uid: string, meta: Partial<ProfileMeta>) {
@@ -48,55 +52,23 @@ export async function saveProfileMeta(uid: string, meta: Partial<ProfileMeta>) {
 }
 
 /**
- * Loads the signed-in user's profile from Firestore and keeps it in state.
- * Exposes a `complete` flag for onboarding gating, plus a `save` helper that
- * persists and updates local state so data survives refresh/logout.
+ * The signed-in user's profile, derived from the shared user document.
+ * Exposes a `complete` flag for onboarding gating and a `save` helper.
  */
 export function useProfileMeta() {
-  const { user, loading: authLoading } = useAuthUser()
-  const [meta, setMeta] = useState<ProfileMeta | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, data, loading, update } = useUserDoc()
 
-  useEffect(() => {
-    let active = true
-    if (authLoading) return
-    if (!user) {
-      setMeta(null)
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    loadProfileMeta(user.uid)
-      .then((m) => {
-        if (active) setMeta(m ?? EMPTY_META)
-      })
-      .catch(() => {
-        if (active) setMeta(EMPTY_META)
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [user, authLoading])
-
-  const save = useCallback(
-    async (next: Partial<ProfileMeta>) => {
-      if (!user) throw new Error("Not signed in.")
-      await saveProfileMeta(user.uid, next)
-      setMeta((prev) => ({ ...(prev ?? EMPTY_META), ...next }))
-    },
-    [user]
+  const meta = useMemo<ProfileMeta | null>(
+    () => (user ? metaFromDoc(data) : null),
+    [user, data]
   )
 
-  return {
-    user,
-    meta,
-    loading: authLoading || loading,
-    complete: isProfileComplete(meta),
-    save,
-  }
+  const save = useCallback(
+    (next: Partial<ProfileMeta>) => update(next as Record<string, unknown>),
+    [update]
+  )
+
+  return { user, meta, loading, complete: isProfileComplete(meta), save }
 }
 
 export const PROGRAMS_BY_FACULTY: Record<string, string[]> = {

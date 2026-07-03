@@ -1,7 +1,5 @@
-import { useCallback, useEffect, useState } from "react"
-import { doc, getDoc, setDoc } from "firebase/firestore"
-import { db } from "./firebase"
-import { useAuthUser } from "./useAuthUser"
+import { useCallback, useMemo } from "react"
+import { useUserDoc } from "./userDoc"
 
 export type PlannedCourse = {
   code: string
@@ -33,108 +31,75 @@ export function termProgressPct(currentTerm: string | undefined | null): number 
   return Math.round((i / ALL_TERM_IDS.length) * 100)
 }
 
+/** Pure move helper — reused by the hook and unit-tested. */
+export function movePlanned(
+  plan: DegreePlan,
+  fromTerm: string,
+  toTerm: string,
+  code: string,
+  index?: number
+): DegreePlan {
+  const course = (plan[fromTerm] ?? []).find((c) => c.code === code)
+  if (!course) return plan
+
+  if (fromTerm === toTerm) {
+    const fromIndex = (plan[toTerm] ?? []).findIndex((c) => c.code === code)
+    const list = (plan[toTerm] ?? []).filter((c) => c.code !== code)
+    // The drop index was measured against the original list (which still
+    // contained the dragged item), so shift down by one when moving later.
+    let at = index === undefined ? list.length : index
+    if (index !== undefined && fromIndex !== -1 && index > fromIndex) at -= 1
+    at = Math.max(0, Math.min(at, list.length))
+    list.splice(at, 0, course)
+    return { ...plan, [toTerm]: list }
+  }
+
+  if ((plan[toTerm] ?? []).some((c) => c.code === code)) return plan
+  const toList = [...(plan[toTerm] ?? [])]
+  const at = index === undefined ? toList.length : Math.max(0, Math.min(index, toList.length))
+  toList.splice(at, 0, course)
+  return {
+    ...plan,
+    [fromTerm]: (plan[fromTerm] ?? []).filter((c) => c.code !== code),
+    [toTerm]: toList,
+  }
+}
+
 export function useDegreePlan() {
-  const { user, loading: authLoading } = useAuthUser()
-  const [plan, setPlan] = useState<DegreePlan>({})
-  const [loading, setLoading] = useState(true)
+  const { data, loading, update } = useUserDoc()
 
-  useEffect(() => {
-    let active = true
-    if (authLoading) return
-    if (!user) {
-      setPlan({})
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    getDoc(doc(db, "users", user.uid))
-      .then((snap) => {
-        if (!active) return
-        const data = snap.data() as { degreePlan?: DegreePlan } | undefined
-        setPlan(data?.degreePlan ?? {})
-      })
-      .catch(() => active && setPlan({}))
-      .finally(() => active && setLoading(false))
-    return () => {
-      active = false
-    }
-  }, [user, authLoading])
-
-  const save = useCallback(
-    (next: DegreePlan) => {
-      setPlan(next)
-      if (user) {
-        setDoc(doc(db, "users", user.uid), { degreePlan: next }, { merge: true })
-      }
-    },
-    [user]
+  const plan = useMemo<DegreePlan>(
+    () => (data?.degreePlan as DegreePlan) ?? {},
+    [data]
   )
+
+  const save = useCallback((next: DegreePlan) => update({ degreePlan: next }), [update])
 
   const addCourse = useCallback(
     (termId: string, course: PlannedCourse) => {
-      setPlan((prev) => {
-        const list = prev[termId] ?? []
-        if (list.some((c) => c.code === course.code)) return prev
-        const next = { ...prev, [termId]: [...list, course] }
-        if (user) setDoc(doc(db, "users", user.uid), { degreePlan: next }, { merge: true })
-        return next
-      })
+      const list = plan[termId] ?? []
+      if (list.some((c) => c.code === course.code)) return
+      save({ ...plan, [termId]: [...list, course] })
     },
-    [user]
+    [plan, save]
   )
 
   const removeCourse = useCallback(
-    (termId: string, code: string) => {
-      setPlan((prev) => {
-        const next = { ...prev, [termId]: (prev[termId] ?? []).filter((c) => c.code !== code) }
-        if (user) setDoc(doc(db, "users", user.uid), { degreePlan: next }, { merge: true })
-        return next
-      })
-    },
-    [user]
+    (termId: string, code: string) =>
+      save({ ...plan, [termId]: (plan[termId] ?? []).filter((c) => c.code !== code) }),
+    [plan, save]
   )
 
-  /**
-   * Move a course to a target term at a specific index (drag and drop).
-   * Handles both cross-term moves and reordering within the same term.
-   */
+  /** Move a course to a target term at a specific index (drag and drop). */
   const moveCourse = useCallback(
     (fromTerm: string, toTerm: string, code: string, index?: number) => {
-      setPlan((prev) => {
-        const course = (prev[fromTerm] ?? []).find((c) => c.code === code)
-        if (!course) return prev
-
-        if (fromTerm === toTerm) {
-          const fromIndex = (prev[toTerm] ?? []).findIndex((c) => c.code === code)
-          const list = (prev[toTerm] ?? []).filter((c) => c.code !== code)
-          // The drop index was measured against the original list (which still
-          // contained the dragged item), so shift down by one when moving later.
-          let at = index === undefined ? list.length : index
-          if (index !== undefined && fromIndex !== -1 && index > fromIndex) at -= 1
-          at = Math.max(0, Math.min(at, list.length))
-          list.splice(at, 0, course)
-          const next = { ...prev, [toTerm]: list }
-          if (user) setDoc(doc(db, "users", user.uid), { degreePlan: next }, { merge: true })
-          return next
-        }
-
-        if ((prev[toTerm] ?? []).some((c) => c.code === code)) return prev
-        const toList = [...(prev[toTerm] ?? [])]
-        const at = index === undefined ? toList.length : Math.min(index, toList.length)
-        toList.splice(at, 0, course)
-        const next = {
-          ...prev,
-          [fromTerm]: (prev[fromTerm] ?? []).filter((c) => c.code !== code),
-          [toTerm]: toList,
-        }
-        if (user) setDoc(doc(db, "users", user.uid), { degreePlan: next }, { merge: true })
-        return next
-      })
+      const next = movePlanned(plan, fromTerm, toTerm, code, index)
+      if (next !== plan) save(next)
     },
-    [user]
+    [plan, save]
   )
 
   const totalCourses = Object.values(plan).reduce((n, list) => n + list.length, 0)
 
-  return { plan, loading: authLoading || loading, addCourse, removeCourse, moveCourse, save, totalCourses }
+  return { plan, loading, addCourse, removeCourse, moveCourse, save, totalCourses }
 }
