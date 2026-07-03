@@ -11,6 +11,7 @@ import {
   type ProfileMeta,
 } from "../../lib/profile"
 import { COOP_SEQUENCES, defaultSequenceId, saveCoopSequence } from "../../lib/coop"
+import { ALL_TERM_IDS } from "../../lib/degreePlan"
 import { goldButton, glassButton } from "../../lib/ui"
 
 const FACULTIES = Object.keys(PROGRAMS_BY_FACULTY)
@@ -94,6 +95,20 @@ export default function Onboarding() {
           options={programOptions}
           disabled={!draft.faculty}
           onChange={(program) => setDraft((p) => ({ ...p, program }))}
+        />
+      ),
+    },
+    {
+      title: "What term are you in now?",
+      subtitle: "Your current academic term — used to track your progress.",
+      valid: !!draft.currentTerm,
+      body: (
+        <SelectMenu
+          label="Current term"
+          value={draft.currentTerm}
+          placeholder="Select your current term"
+          options={[...ALL_TERM_IDS]}
+          onChange={(term) => setDraft((p) => ({ ...p, currentTerm: term }))}
         />
       ),
     },
