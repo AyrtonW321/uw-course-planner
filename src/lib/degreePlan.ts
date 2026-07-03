@@ -105,8 +105,13 @@ export function useDegreePlan() {
         if (!course) return prev
 
         if (fromTerm === toTerm) {
+          const fromIndex = (prev[toTerm] ?? []).findIndex((c) => c.code === code)
           const list = (prev[toTerm] ?? []).filter((c) => c.code !== code)
-          const at = index === undefined ? list.length : Math.min(index, list.length)
+          // The drop index was measured against the original list (which still
+          // contained the dragged item), so shift down by one when moving later.
+          let at = index === undefined ? list.length : index
+          if (index !== undefined && fromIndex !== -1 && index > fromIndex) at -= 1
+          at = Math.max(0, Math.min(at, list.length))
           list.splice(at, 0, course)
           const next = { ...prev, [toTerm]: list }
           if (user) setDoc(doc(db, "users", user.uid), { degreePlan: next }, { merge: true })

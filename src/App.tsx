@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom"
+import { Routes, Route, Navigate } from "react-router-dom"
 import HomePage from "./pages/homepage"
 import Login from "./pages/login/login"
 import Register from "./pages/login/register"
@@ -39,6 +39,9 @@ export default function App() {
         <Route path="profile" element={<ProfilePage />} />
         <Route path="timetable" element={<TimetablePage />} />
       </Route>
+
+      {/* Unknown routes fall back home. */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
