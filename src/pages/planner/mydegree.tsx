@@ -2,6 +2,7 @@ import { useMemo } from "react"
 import { Link } from "react-router-dom"
 import { useProfileMeta } from "../../lib/profile"
 import { useDegreePlan } from "../../lib/degreePlan"
+import { useCompleted } from "../../lib/completed"
 import {
   BMATH_DEGREE_LEVEL,
   estimateCredit,
@@ -80,24 +81,37 @@ function GroupCard({ group, have }: { group: ReqGroup; have: Set<string> }) {
 export default function MyDegree() {
   const { meta } = useProfileMeta()
   const { plan } = useDegreePlan()
+  const { completed, codes: completedCodes } = useCompleted()
 
+  // Everything counted toward the degree: completed + planned courses.
   const have = useMemo(() => {
-    const set = new Set<string>()
+    const set = new Set<string>(completedCodes)
     for (const list of Object.values(plan)) for (const c of list) set.add(c.code)
     return set
-  }, [plan])
+  }, [plan, completedCodes])
 
   const { mathUnits, nonMathUnits } = useMemo(() => {
     let m = 0
     let nm = 0
-    for (const list of Object.values(plan))
-      for (const c of list) {
-        const u = estimateCredit(c.code)
-        if (isMathCourse(c.code)) m += u
-        else nm += u
+    const countCode = (code: string) => {
+      const u = estimateCredit(code)
+      if (isMathCourse(code)) m += u
+      else nm += u
+    }
+    const counted = new Set<string>()
+    for (const c of completed)
+      if (!counted.has(c.code)) {
+        counted.add(c.code)
+        countCode(c.code)
       }
+    for (const list of Object.values(plan))
+      for (const c of list)
+        if (!counted.has(c.code)) {
+          counted.add(c.code)
+          countCode(c.code)
+        }
     return { mathUnits: m, nonMathUnits: nm }
-  }, [plan])
+  }, [plan, completed])
 
   const req = getProgramRequirements(meta?.program)
 

@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router-dom"
 const TABS = [
   { to: "/app/planner", label: "Planner", end: true },
   { to: "/app/planner/degree", label: "My Degree", end: false },
+  { to: "/app/planner/completed", label: "Completed", end: false },
   { to: "/app/planner/coop", label: "Co-op", end: false },
 ]
 

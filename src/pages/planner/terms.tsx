@@ -4,6 +4,7 @@ import CourseSearch from "../../components/CourseSearch"
 import LeadsToPopover from "../../components/LeadsToPopover"
 import { useDegreePlan } from "../../lib/degreePlan"
 import { useCoopPlan, type CoopSlot } from "../../lib/coop"
+import { useCompleted } from "../../lib/completed"
 import { useProfileMeta } from "../../lib/profile"
 import {
   estimateCredit,
@@ -30,21 +31,24 @@ export default function PlannerTerms() {
   const { meta } = useProfileMeta()
   const coop = useCoopPlan()
   const { resolve, leadsTo } = usePrereqIndex()
+  const { codes: completedCodes, grades } = useCompleted()
   const slots = coop.slots
   const [drag, setDrag] = useState<DragState>(null)
   const [hover, setHover] = useState<HoverState>(null)
   const [asideOpen, setAsideOpen] = useState(true)
 
+  // Cumulative course codes taken before each slot. Seeded with completed
+  // courses, which count as done regardless of term.
   const haveBeforeSlot = useMemo(() => {
     const map: Record<string, Set<string>> = {}
-    const acc = new Set<string>()
+    const acc = new Set<string>(completedCodes)
     for (const slot of slots) {
       map[slot.id] = new Set(acc)
       if (slot.type === "study") for (const c of plan[slot.label] ?? []) acc.add(c.code)
       if (slot.type === "work") for (const c of coop.plan.onlineCourses[slot.id] ?? []) acc.add(c.code)
     }
     return map
-  }, [slots, plan, coop.plan.onlineCourses])
+  }, [slots, plan, coop.plan.onlineCourses, completedCodes])
 
   if (loading || coop.loading) {
     return (
@@ -106,7 +110,7 @@ export default function PlannerTerms() {
           <ul>
             {courses.map((crs, i) => {
               const clauses = resolve(crs.code)
-              const status = statusForClauses(clauses, have)
+              const status = statusForClauses(clauses, have, grades)
               const lt = leadsTo(crs.code)
               const tip = [
                 status === "met" ? "Prerequisites met" : status === "grade" ? "Prereq needs a grade" : "Missing a prerequisite",

@@ -168,23 +168,45 @@ export type PrereqStatus = "met" | "missing" | "grade"
 export type PrereqClause = ReqCourse[]
 
 /**
- * Aggregate status across AND-clauses of OR-alternatives.
- *  - A clause is satisfied if any alternative is in `have`.
- *  - "missing" if some clause has no alternative satisfied.
- *  - "grade" if all clauses satisfied but at least one only via an
- *    alternative that needs a minimum mark.
+ * Aggregate status across AND-clauses of OR-alternatives, optionally checking
+ * known grades for grade-required alternatives.
+ *  - A clause is "met" if an alternative is satisfied (plain, or grade-required
+ *    with a known mark ≥ the cutoff).
+ *  - "grade" if a clause is only covered by a grade-required alternative whose
+ *    mark is unknown (can't verify yet).
+ *  - "missing" if a clause has no satisfiable alternative.
  */
-export function statusForClauses(clauses: PrereqClause[], have: Set<string>): PrereqStatus {
+export function statusForClauses(
+  clauses: PrereqClause[],
+  have: Set<string>,
+  grades?: Map<string, number>
+): PrereqStatus {
   if (clauses.length === 0) return "met"
   let anyMissing = false
   let anyGrade = false
+
   for (const clause of clauses) {
-    const plain = clause.some((a) => !a.minGrade && have.has(a.code))
-    const grade = clause.some((a) => a.minGrade && have.has(a.code))
-    if (plain) continue
-    if (grade) anyGrade = true
+    let met = false
+    let pending = false
+    for (const alt of clause) {
+      if (!have.has(alt.code)) continue
+      if (!alt.minGrade) {
+        met = true
+        break
+      }
+      const g = grades?.get(alt.code)
+      if (g === undefined) pending = true // have it, grade unknown
+      else if (g >= alt.minGrade) {
+        met = true
+        break
+      }
+      // grade known and below the cutoff → this alternative doesn't satisfy
+    }
+    if (met) continue
+    if (pending) anyGrade = true
     else anyMissing = true
   }
+
   return anyMissing ? "missing" : anyGrade ? "grade" : "met"
 }
 

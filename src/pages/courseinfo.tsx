@@ -4,6 +4,7 @@ import { DAY_LABELS, formatTime, type Course } from "../lib/courses"
 import { getCourseWithSections, getTermInfo } from "../lib/catalog"
 import { useTimetable } from "../lib/timetable"
 import { ALL_TERM_IDS, useDegreePlan } from "../lib/degreePlan"
+import { useCompleted } from "../lib/completed"
 import { PREREQS } from "../lib/requirements"
 import { parsePrereqClauses } from "../lib/prereqParser"
 import { usePrereqIndex } from "../lib/usePrereq"
@@ -25,15 +26,16 @@ export default function CourseInfoPage() {
 
   const { has, add, remove } = useTimetable()
   const { plan, addCourse } = useDegreePlan()
+  const { codes: completedCodes } = useCompleted()
   const { leadsTo: leadsToIndex } = usePrereqIndex()
   const { rating } = useCourseRating(decoded)
 
-  // Everything the student has placed in their plan — used to colour prereqs.
+  // Everything the student has completed or planned — used to colour prereqs.
   const have = useMemo(() => {
-    const set = new Set<string>()
+    const set = new Set<string>(completedCodes)
     for (const list of Object.values(plan)) for (const c of list) set.add(c.code)
     return set
-  }, [plan])
+  }, [plan, completedCodes])
 
   useEffect(() => {
     let active = true

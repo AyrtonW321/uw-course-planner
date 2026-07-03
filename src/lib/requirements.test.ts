@@ -33,6 +33,16 @@ describe("statusForClauses", () => {
     expect(statusForClauses(clauses, have("MATH 136"))).toBe("missing")
     expect(statusForClauses(clauses, have("MATH 136", "MATH 138"))).toBe("met")
   })
+
+  it("checks known grades against the cutoff", () => {
+    const clause = [[{ code: "MATH 136", minGrade: 60 }, { code: "MATH 146" }]]
+    // Completed with a passing grade → met (green).
+    expect(statusForClauses(clause, have("MATH 136"), new Map([["MATH 136", 75]]))).toBe("met")
+    // Completed but below the cutoff, no other alternative → missing (red).
+    expect(statusForClauses(clause, have("MATH 136"), new Map([["MATH 136", 55]]))).toBe("missing")
+    // Have it but grade unknown → grade (yellow).
+    expect(statusForClauses(clause, have("MATH 136"))).toBe("grade")
+  })
 })
 
 describe("credit helpers", () => {

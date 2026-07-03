@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import { useProfileMeta } from "../../lib/profile"
 import { useDegreePlan } from "../../lib/degreePlan"
 import { useCoopPlan } from "../../lib/coop"
+import { useCompleted } from "../../lib/completed"
 import {
   estimateCredit,
   getProgramRequirements,
@@ -35,14 +36,15 @@ export default function RequirementsAside({ onCollapse }: { onCollapse?: () => v
   const { meta } = useProfileMeta()
   const { plan } = useDegreePlan()
   const coop = useCoopPlan()
+  const { codes: completedCodes } = useCompleted()
   const req = getProgramRequirements(meta?.program)
 
   const have = useMemo(() => {
-    const set = new Set<string>()
+    const set = new Set<string>(completedCodes)
     for (const list of Object.values(plan)) for (const c of list) set.add(c.code)
     for (const list of Object.values(coop.plan.onlineCourses)) for (const c of list) set.add(c.code)
     return set
-  }, [plan, coop.plan.onlineCourses])
+  }, [plan, coop.plan.onlineCourses, completedCodes])
 
   const { math, nonMath } = useMemo(() => {
     let m = 0
