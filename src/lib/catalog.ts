@@ -23,6 +23,7 @@ import {
   type UwClassSchedule,
   type UwCourse,
 } from "./uwapi"
+import { cacheGet, cacheSet, DAY, WEEK } from "./cache"
 
 export const USE_API = hasUwApi()
 
@@ -104,8 +105,14 @@ export async function getTermInfo(): Promise<{ termCode: string; name: string }>
     termCache = { termCode: "MOCK", name: "Sample term" }
     return termCache
   }
+  const cached = cacheGet<{ termCode: string; name: string }>("term:current", DAY)
+  if (cached) {
+    termCache = cached
+    return cached
+  }
   const t = await getCurrentTerm()
   termCache = { termCode: t.termCode, name: t.name }
+  cacheSet("term:current", termCache)
   return termCache
 }
 
@@ -121,10 +128,16 @@ export async function listSubjects(): Promise<{ code: string; name: string }[]> 
     subjectsCache = [...set.values()].sort().map((code) => ({ code, name: code }))
     return subjectsCache
   }
+  const cached = cacheGet<{ code: string; name: string }[]>("subjects", WEEK)
+  if (cached) {
+    subjectsCache = cached
+    return cached
+  }
   const subs = await getSubjects()
   subjectsCache = subs
     .map((s) => ({ code: s.code, name: s.description || s.name || s.code }))
     .sort((a, b) => a.code.localeCompare(b.code))
+  cacheSet("subjects", subjectsCache)
   return subjectsCache
 }
 
@@ -145,17 +158,42 @@ export async function listCoursesBySubject(
   if (!USE_API) {
     courses = COURSES.filter((c) => c.subject === subject)
   } else {
+    const persisted = cacheGet<Course[]>(`subj:${key}`, DAY)
+    if (persisted) {
+      subjectCoursesCache.set(key, persisted)
+      return persisted
+    }
     const raw = await getCoursesBySubject(termCode, subject)
     courses = raw
       .map((c) => mapCourse(c))
       .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
+    cacheSet(`subj:${key}`, courses)
   }
   subjectCoursesCache.set(key, courses)
   return courses
 }
 
-// Whole-term catalog, cached, for course-wide autocomplete search.
+// Whole-term catalog, cached, for course-wide autocomplete + prereq parsing.
 let allCoursesCache: { termCode: string; courses: Course[] } | null = null
+
+// Slim shape persisted to localStorage (the whole term is large; drop the big
+// `description` field, which the search + prereq index don't need).
+type SlimCourse = { code: string; name: string; subject: string; requirements?: string }
+const toSlim = (c: Course): SlimCourse => ({
+  code: c.code,
+  name: c.name,
+  subject: c.subject,
+  requirements: c.requirements,
+})
+const fromSlim = (s: SlimCourse): Course => ({
+  code: s.code,
+  name: s.name,
+  subject: s.subject,
+  description: "",
+  requirements: s.requirements,
+  prereqs: [],
+  sections: [],
+})
 
 export async function listAllCourses(termCode: string): Promise<Course[]> {
   if (allCoursesCache?.termCode === termCode) return allCoursesCache.courses
@@ -164,10 +202,17 @@ export async function listAllCourses(termCode: string): Promise<Course[]> {
   if (!USE_API) {
     courses = COURSES
   } else {
+    const persisted = cacheGet<SlimCourse[]>(`all:${termCode}`, DAY)
+    if (persisted) {
+      courses = persisted.map(fromSlim)
+      allCoursesCache = { termCode, courses }
+      return courses
+    }
     const raw = await getCoursesByTerm(termCode)
     courses = raw
       .map((c) => mapCourse(c))
       .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
+    cacheSet(`all:${termCode}`, courses.map(toSlim))
   }
   allCoursesCache = { termCode, courses }
   return courses
