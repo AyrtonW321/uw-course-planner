@@ -5,6 +5,7 @@ import {
   signInWithPopup,
 } from "firebase/auth"
 import { auth } from "../../lib/firebase"
+import { errorMessage } from "../../lib/errors"
 import { Link, useNavigate } from "react-router-dom"
 import ConstellationCanvas from "../../components/ConstellationCanvas"
 
@@ -79,8 +80,8 @@ export default function Register() {
     try {
       await createUserWithEmailAndPassword(auth, email, password)
       navigate("/onboarding")
-    } catch (err: any) {
-      setError(err?.message ?? "Registration failed.")
+    } catch (err) {
+      setError(errorMessage(err, "Registration failed."))
     } finally {
       setLoading(false)
     }
@@ -93,8 +94,8 @@ export default function Register() {
       const provider = new GoogleAuthProvider()
       await signInWithPopup(auth, provider)
       navigate("/onboarding")
-    } catch (err: any) {
-      setError(err?.message ?? "Google sign-in failed.")
+    } catch (err) {
+      setError(errorMessage(err, "Google sign-in failed."))
     } finally {
       setLoading(false)
     }

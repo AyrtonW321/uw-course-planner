@@ -10,6 +10,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faPen } from "@fortawesome/free-solid-svg-icons"
 import SelectMenu from "../components/SelectMenu"
+import { errorCode, errorMessage } from "../lib/errors"
 import { ALL_TERM_IDS } from "../lib/degreePlan"
 import {
   EMPTY_META,
@@ -181,8 +182,8 @@ export default function ProfilePage() {
       setPhotoFile(null)
       setEditName(false)
       flash("Profile updated.")
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to update profile.")
+    } catch (err) {
+      setError(errorMessage(err, "Failed to update profile."))
     } finally {
       setSaving(false)
     }
@@ -202,11 +203,11 @@ export default function ProfilePage() {
       await verifyBeforeUpdateEmail(user, nextEmail)
       setEditEmail(false)
       flash("Verification email sent. Click the link to finish changing your email.")
-    } catch (err: any) {
-      if (err?.code === "auth/requires-recent-login") {
+    } catch (err) {
+      if (errorCode(err) === "auth/requires-recent-login") {
         setError("For security, log out and back in, then change your email again.")
       } else {
-        setError(err?.message ?? "Failed to update email.")
+        setError(errorMessage(err, "Failed to update email."))
       }
     } finally {
       setSaving(false)
@@ -223,11 +224,11 @@ export default function ProfilePage() {
       setNewPassword("")
       setEditPassword(false)
       flash("Password updated.")
-    } catch (err: any) {
-      if (err?.code === "auth/requires-recent-login") {
+    } catch (err) {
+      if (errorCode(err) === "auth/requires-recent-login") {
         setError("For security, log out and back in, then change your password again.")
       } else {
-        setError(err?.message ?? "Failed to update password.")
+        setError(errorMessage(err, "Failed to update password."))
       }
     } finally {
       setSaving(false)
@@ -246,8 +247,8 @@ export default function ProfilePage() {
       await save(draft)
       setEditSettings(false) // collapse back to summary
       flash("Settings saved.")
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to save settings.")
+    } catch (err) {
+      setError(errorMessage(err, "Failed to save settings."))
     } finally {
       setSaving(false)
     }

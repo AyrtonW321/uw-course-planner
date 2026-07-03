@@ -12,6 +12,7 @@ import {
 } from "../../lib/profile"
 import { COOP_SEQUENCES, defaultSequenceId, saveCoopSequence } from "../../lib/coop"
 import { ALL_TERM_IDS } from "../../lib/degreePlan"
+import { errorMessage } from "../../lib/errors"
 import { goldButton, glassButton } from "../../lib/ui"
 
 const FACULTIES = Object.keys(PROGRAMS_BY_FACULTY)
@@ -216,8 +217,8 @@ export default function Onboarding() {
       await save(draft)
       if (draft.coop === "yes" && user) await saveCoopSequence(user.uid, seqId)
       navigate("/app", { replace: true })
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to save your profile. Try again.")
+    } catch (err) {
+      setError(errorMessage(err, "Failed to save your profile. Try again."))
     } finally {
       setSaving(false)
     }

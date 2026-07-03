@@ -8,6 +8,7 @@ import {
   browserSessionPersistence,
 } from "firebase/auth"
 import { auth } from "../../lib/firebase"
+import { errorMessage } from "../../lib/errors"
 import { Link, useNavigate } from "react-router-dom"
 import ConstellationCanvas from "../../components/ConstellationCanvas"
 
@@ -54,8 +55,8 @@ export default function Login() {
       await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence)
       await signInWithEmailAndPassword(auth, email, password)
       navigate("/app")
-    } catch (err: any) {
-      setError(err?.message ?? "Login failed.")
+    } catch (err) {
+      setError(errorMessage(err, "Login failed."))
     } finally {
       setLoading(false)
     }
@@ -69,8 +70,8 @@ export default function Login() {
       const provider = new GoogleAuthProvider()
       await signInWithPopup(auth, provider)
       navigate("/app")
-    } catch (err: any) {
-      setError(err?.message ?? "Google sign-in failed.")
+    } catch (err) {
+      setError(errorMessage(err, "Google sign-in failed."))
     } finally {
       setLoading(false)
     }
