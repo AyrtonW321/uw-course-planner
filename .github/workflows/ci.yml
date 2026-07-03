@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main, frontpage]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Dummy client config so Firebase initializes deterministically in CI.
+    # Real values are injected at deploy time, not needed to lint/test/build.
+    env:
+      VITE_FIREBASE_API_KEY: ci-dummy
+      VITE_FIREBASE_AUTH_DOMAIN: ci-dummy.firebaseapp.com
+      VITE_FIREBASE_PROJECT_ID: ci-dummy
+      VITE_FIREBASE_STORAGE_BUCKET: ci-dummy.appspot.com
+      VITE_FIREBASE_MESSAGING_SENDER_ID: "0"
+      VITE_FIREBASE_APP_ID: ci-dummy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build
