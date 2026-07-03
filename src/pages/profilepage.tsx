@@ -7,8 +7,6 @@ import {
 import { db, storage } from "../lib/firebase"
 import { doc, setDoc } from "firebase/firestore"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faPen } from "@fortawesome/free-solid-svg-icons"
 import SelectMenu from "../components/SelectMenu"
 import { errorCode, errorMessage } from "../lib/errors"
 import { ALL_TERM_IDS } from "../lib/degreePlan"
@@ -56,7 +54,9 @@ function EditableField({
             aria-label={`Edit ${label}`}
             title={`Edit ${label}`}
           >
-            <FontAwesomeIcon icon={faPen} className="text-xs" />
+            <svg className="h-3 w-3" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61zm1.414 1.06a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354l-1.086-1.086zM11.189 6.23 9.75 4.79l-6.286 6.287a.25.25 0 0 0-.064.108l-.558 1.953 1.953-.558a.25.25 0 0 0 .108-.064L11.189 6.23z" />
+            </svg>
           </button>
         )}
       </div>

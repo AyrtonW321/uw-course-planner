@@ -1,47 +1,62 @@
+import { lazy, Suspense } from "react"
 import { Routes, Route, Navigate } from "react-router-dom"
-import HomePage from "./pages/homepage"
-import Login from "./pages/login/login"
-import Register from "./pages/login/register"
-import MainPage from "./pages/mainpage"
-import Dashboard from "./pages/dashboard"
-import ProfilePage from "./pages/profilepage"
-import TimetablePage from "./pages/timetable"
-import CoursesPage from "./pages/courses"
-import CourseInfoPage from "./pages/courseinfo"
-import PlannerLayout from "./pages/planner/PlannerLayout"
-import PlannerTerms from "./pages/planner/terms"
-import MyDegree from "./pages/planner/mydegree"
-import CoopPage from "./pages/planner/coop"
-import Onboarding from "./pages/login/onboarding"
 
+// Route-level code splitting keeps the initial bundle small; each page loads
+// on demand behind the Suspense fallback below.
+const HomePage = lazy(() => import("./pages/homepage"))
+const Login = lazy(() => import("./pages/login/login"))
+const Register = lazy(() => import("./pages/login/register"))
+const Onboarding = lazy(() => import("./pages/login/onboarding"))
+const MainPage = lazy(() => import("./pages/mainpage"))
+const Dashboard = lazy(() => import("./pages/dashboard"))
+const ProfilePage = lazy(() => import("./pages/profilepage"))
+const TimetablePage = lazy(() => import("./pages/timetable"))
+const CoursesPage = lazy(() => import("./pages/courses"))
+const CourseInfoPage = lazy(() => import("./pages/courseinfo"))
+const PlannerLayout = lazy(() => import("./pages/planner/PlannerLayout"))
+const PlannerTerms = lazy(() => import("./pages/planner/terms"))
+const MyDegree = lazy(() => import("./pages/planner/mydegree"))
+const CompletedPage = lazy(() => import("./pages/planner/completed"))
+const CoopPage = lazy(() => import("./pages/planner/coop"))
+
+function PageFallback() {
+  return (
+    <div className="app-bg flex min-h-screen items-center justify-center text-zinc-400">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-yellow-400" />
+    </div>
+  )
+}
 
 export default function App() {
   return (
-    <Routes>
-      {/* Public */}
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+    <Suspense fallback={<PageFallback />}>
+      <Routes>
+        {/* Public */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-      {/* First-run profile setup (auth required, no navbar) */}
-      <Route path="/onboarding" element={<Onboarding />} />
+        {/* First-run profile setup (auth required, no navbar) */}
+        <Route path="/onboarding" element={<Onboarding />} />
 
-      {/* Protected app area (NavBar shows here) */}
-      <Route path="/app" element={<MainPage />}>
-        <Route index element={<Dashboard />} />
-        <Route path="courses" element={<CoursesPage />} />
-        <Route path="courses/:code" element={<CourseInfoPage />} />
-        <Route path="planner" element={<PlannerLayout />}>
-          <Route index element={<PlannerTerms />} />
-          <Route path="degree" element={<MyDegree />} />
-          <Route path="coop" element={<CoopPage />} />
+        {/* Protected app area (NavBar shows here) */}
+        <Route path="/app" element={<MainPage />}>
+          <Route index element={<Dashboard />} />
+          <Route path="courses" element={<CoursesPage />} />
+          <Route path="courses/:code" element={<CourseInfoPage />} />
+          <Route path="planner" element={<PlannerLayout />}>
+            <Route index element={<PlannerTerms />} />
+            <Route path="degree" element={<MyDegree />} />
+            <Route path="completed" element={<CompletedPage />} />
+            <Route path="coop" element={<CoopPage />} />
+          </Route>
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="timetable" element={<TimetablePage />} />
         </Route>
-        <Route path="profile" element={<ProfilePage />} />
-        <Route path="timetable" element={<TimetablePage />} />
-      </Route>
 
-      {/* Unknown routes fall back home. */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Unknown routes fall back home. */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   )
 }
