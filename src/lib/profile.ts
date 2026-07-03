@@ -11,6 +11,8 @@ export type ProfileMeta = {
   coop: "yes" | "no"
   gradTerm: GradTerm | ""
   gradYear: number | null
+  /** Academic term the student is currently in, e.g. "1A". */
+  currentTerm: string
 }
 
 export const EMPTY_META: ProfileMeta = {
@@ -19,6 +21,7 @@ export const EMPTY_META: ProfileMeta = {
   coop: "yes",
   gradTerm: "",
   gradYear: null,
+  currentTerm: "",
 }
 
 /** A profile is "complete" once the essentials for planning are filled in. */
@@ -36,6 +39,7 @@ export async function loadProfileMeta(uid: string): Promise<ProfileMeta | null> 
     coop: d.coop ?? "yes",
     gradTerm: (d.gradTerm as GradTerm) ?? "",
     gradYear: d.gradYear ?? null,
+    currentTerm: d.currentTerm ?? "",
   }
 }
 

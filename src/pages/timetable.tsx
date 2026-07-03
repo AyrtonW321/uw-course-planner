@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { DAY_LABELS, formatTime } from "../lib/courses"
 import { useTimetable } from "../lib/timetable"
 import { ALL_TERM_IDS } from "../lib/degreePlan"
+import { useProfileMeta } from "../lib/profile"
 import SelectMenu from "../components/SelectMenu"
 import { glassCard, goldButton } from "../lib/ui"
 
@@ -37,18 +38,27 @@ const HOURS = Array.from({ length: (END - START) / 60 + 1 }, (_, i) => START / 6
 
 export default function TimetablePage() {
   const { entries, loading, remove } = useTimetable()
+  const { meta, loading: profileLoading } = useProfileMeta()
   const [term, setTerm] = useState("1A")
+  const inited = useRef(false)
 
-  // Default to the first term that actually has entries.
+  // On first load, open to the user's current term (from their profile).
+  // Fall back to the first term that has courses, else 1A.
   useEffect(() => {
-    if (entries.length === 0) return
-    const present = new Set(entries.map((e) => e.term ?? "1A"))
-    if (!present.has(term)) {
+    if (inited.current || profileLoading) return
+    const current = meta?.currentTerm
+    if (current && ALL_TERM_IDS.includes(current)) {
+      setTerm(current)
+      inited.current = true
+      return
+    }
+    if (entries.length > 0) {
+      const present = new Set(entries.map((e) => e.term ?? "1A"))
       const first = ALL_TERM_IDS.find((t) => present.has(t))
       if (first) setTerm(first)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries])
+    inited.current = true
+  }, [meta, profileLoading, entries])
 
   const termEntries = useMemo(
     () => entries.filter((e) => (e.term ?? "1A") === term),

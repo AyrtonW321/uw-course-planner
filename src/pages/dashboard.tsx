@@ -2,11 +2,8 @@ import { useMemo } from "react"
 import { Link } from "react-router-dom"
 import { useProfileMeta } from "../lib/profile"
 import { useTimetable } from "../lib/timetable"
-import { useDegreePlan } from "../lib/degreePlan"
+import { ALL_TERM_IDS, termProgressPct } from "../lib/degreePlan"
 import { getSequence, useCoopPlan } from "../lib/coop"
-
-// Rough target used only for the progress bar until real audit data exists.
-const TARGET_COURSES = 40
 
 function greeting() {
   const h = new Date().getHours()
@@ -38,7 +35,6 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
 export default function Dashboard() {
   const { user, meta } = useProfileMeta()
   const { entries } = useTimetable()
-  const { totalCourses } = useDegreePlan()
   const { plan: coopPlan, slots: coopSlots } = useCoopPlan()
   const sequenceLabel = coopPlan.slots?.length ? "Custom" : getSequence(coopPlan.sequenceId).label
 
@@ -56,7 +52,12 @@ export default function Dashboard() {
     return [...seen.entries()].map(([code, title]) => ({ code, title }))
   }, [entries])
 
-  const pct = Math.min(100, Math.round((totalCourses / TARGET_COURSES) * 100))
+  // Degree progress is driven by the student's current term (index / 8).
+  const currentTerm = meta?.currentTerm || ""
+  const termIndex = currentTerm ? ALL_TERM_IDS.indexOf(currentTerm) : -1
+  const pct = termProgressPct(currentTerm)
+  const termsDone = termIndex >= 0 ? termIndex : 0
+  const termsLeft = termIndex >= 0 ? ALL_TERM_IDS.length - termIndex : ALL_TERM_IDS.length
 
   return (
     <div className="space-y-8">
@@ -100,18 +101,27 @@ export default function Dashboard() {
           </div>
           <div className="mt-4 grid grid-cols-3 gap-3 text-center">
             <div className="rounded-lg bg-white/[0.03] py-3">
-              <p className="text-lg font-bold text-white">{totalCourses}</p>
-              <p className="text-xs text-zinc-500">Planned</p>
+              <p className="text-lg font-bold text-white">{currentTerm || "—"}</p>
+              <p className="text-xs text-zinc-500">Current term</p>
             </div>
             <div className="rounded-lg bg-white/[0.03] py-3">
-              <p className="text-lg font-bold text-white">{Math.max(0, TARGET_COURSES - totalCourses)}</p>
-              <p className="text-xs text-zinc-500">Remaining (est.)</p>
+              <p className="text-lg font-bold text-white">{termsDone}</p>
+              <p className="text-xs text-zinc-500">Terms completed</p>
             </div>
             <div className="rounded-lg bg-white/[0.03] py-3">
-              <p className="text-lg font-bold text-white">{grad}</p>
-              <p className="text-xs text-zinc-500">Target grad</p>
+              <p className="text-lg font-bold text-white">{termsLeft}</p>
+              <p className="text-xs text-zinc-500">Terms remaining</p>
             </div>
           </div>
+          {!currentTerm && (
+            <p className="mt-3 text-xs text-zinc-600">
+              Set your current term in{" "}
+              <Link to="/app/profile" className="text-yellow-400 hover:text-yellow-300">
+                your profile
+              </Link>{" "}
+              to track progress.
+            </p>
+          )}
           <Link
             to="/app/planner"
             className="mt-4 inline-block text-xs text-yellow-400 hover:text-yellow-300"

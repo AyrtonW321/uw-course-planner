@@ -10,6 +10,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faPen } from "@fortawesome/free-solid-svg-icons"
 import SelectMenu from "../components/SelectMenu"
+import { ALL_TERM_IDS } from "../lib/degreePlan"
 import {
   EMPTY_META,
   PROGRAMS_BY_FACULTY,
@@ -404,6 +405,7 @@ export default function ProfilePage() {
           <div>
             <SummaryRow label="Faculty" value={meta?.faculty ?? ""} />
             <SummaryRow label="Program" value={meta?.program ?? ""} />
+            <SummaryRow label="Current term" value={meta?.currentTerm ?? ""} />
             <SummaryRow label="Co-op" value={coopLabel} />
             <SummaryRow label="Graduation" value={gradLabel} />
           </div>
@@ -431,6 +433,15 @@ export default function ProfilePage() {
               options={programOptions}
               disabled={saving || !draft.faculty}
               onChange={(program) => setDraft((p) => ({ ...p, program }))}
+            />
+
+            <SelectMenu
+              label="Current term"
+              value={draft.currentTerm}
+              placeholder="Select your current term"
+              options={[...ALL_TERM_IDS]}
+              disabled={saving}
+              onChange={(term) => setDraft((p) => ({ ...p, currentTerm: term }))}
             />
 
             <div className="space-y-1.5">

@@ -21,6 +21,18 @@ export const PLAN_YEARS: { year: number; terms: { id: string; label: string }[] 
 
 export const ALL_TERM_IDS = PLAN_YEARS.flatMap((y) => y.terms.map((t) => t.id))
 
+/**
+ * Degree progress from the student's current term: the fraction of the eight
+ * academic terms already completed. Being *in* 1A means 0 terms done (0%);
+ * being in 3A (index 4) means 4/8 = 50%; after 4B → 100%.
+ */
+export function termProgressPct(currentTerm: string | undefined | null): number {
+  if (!currentTerm) return 0
+  const i = ALL_TERM_IDS.indexOf(currentTerm)
+  if (i < 0) return 0
+  return Math.round((i / ALL_TERM_IDS.length) * 100)
+}
+
 export function useDegreePlan() {
   const { user, loading: authLoading } = useAuthUser()
   const [plan, setPlan] = useState<DegreePlan>({})
