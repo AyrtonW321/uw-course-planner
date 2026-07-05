@@ -1,7 +1,7 @@
 import { useMemo } from "react"
 import { Link } from "react-router-dom"
 import { useProfileMeta } from "../../lib/profile"
-import { useDegreePlan } from "../../lib/degreePlan"
+import { fmtUnits, useDegreePlan } from "../../lib/degreePlan"
 import { useCoopPlan } from "../../lib/coop"
 import { useCompleted } from "../../lib/completed"
 import {
@@ -18,7 +18,7 @@ function MiniBar({ value, max, label }: { value: number; max: number; label: str
       <div className="mb-1 flex items-center justify-between text-[11px]">
         <span className="text-zinc-400">{label}</span>
         <span className="text-zinc-600">
-          {value.toFixed(1)}/{max.toFixed(1)}
+          {fmtUnits(value)}/{fmtUnits(max)}
         </span>
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
@@ -36,15 +36,18 @@ export default function RequirementsAside({ onCollapse }: { onCollapse?: () => v
   const { meta } = useProfileMeta()
   const { plan } = useDegreePlan()
   const coop = useCoopPlan()
-  const { codes: completedCodes } = useCompleted()
+  const { passedCodes, failedCodes } = useCompleted()
   const req = getProgramRequirements(meta?.program)
 
+  // Passed/CR completed courses + planned courses, excluding failed ones
+  // (which earn no credit).
   const have = useMemo(() => {
-    const set = new Set<string>(completedCodes)
-    for (const list of Object.values(plan)) for (const c of list) set.add(c.code)
+    const set = new Set<string>(passedCodes)
+    for (const list of Object.values(plan))
+      for (const c of list) if (!failedCodes.has(c.code)) set.add(c.code)
     for (const list of Object.values(coop.plan.onlineCourses)) for (const c of list) set.add(c.code)
     return set
-  }, [plan, coop.plan.onlineCourses, completedCodes])
+  }, [plan, coop.plan.onlineCourses, passedCodes, failedCodes])
 
   const { math, nonMath } = useMemo(() => {
     let m = 0

@@ -2,9 +2,9 @@ import { Fragment, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import CourseSearch from "../../components/CourseSearch"
 import LeadsToPopover from "../../components/LeadsToPopover"
-import { useDegreePlan } from "../../lib/degreePlan"
+import { completedTerms, fmtUnits, useDegreePlan } from "../../lib/degreePlan"
 import { useCoopPlan, type CoopSlot } from "../../lib/coop"
-import { useCompleted } from "../../lib/completed"
+import { isFailing, useCompleted } from "../../lib/completed"
 import { useProfileMeta } from "../../lib/profile"
 import {
   estimateCredit,
@@ -31,24 +31,28 @@ export default function PlannerTerms() {
   const { meta } = useProfileMeta()
   const coop = useCoopPlan()
   const { resolve, leadsTo } = usePrereqIndex()
-  const { codes: completedCodes, grades } = useCompleted()
+  const { passedCodes, failedCodes, grades, byCode } = useCompleted()
   const slots = coop.slots
   const [drag, setDrag] = useState<DragState>(null)
   const [hover, setHover] = useState<HoverState>(null)
   const [asideOpen, setAsideOpen] = useState(true)
+  const [menuKey, setMenuKey] = useState<string | null>(null)
 
-  // Cumulative course codes taken before each slot. Seeded with completed
-  // courses, which count as done regardless of term.
+  const doneTerms = useMemo(() => new Set(completedTerms(meta?.currentTerm)), [meta?.currentTerm])
+
+  // Cumulative course codes taken before each slot. Seeded with passed
+  // completed courses; failed courses earn no credit and are excluded.
   const haveBeforeSlot = useMemo(() => {
     const map: Record<string, Set<string>> = {}
-    const acc = new Set<string>(completedCodes)
+    const acc = new Set<string>(passedCodes)
     for (const slot of slots) {
       map[slot.id] = new Set(acc)
-      if (slot.type === "study") for (const c of plan[slot.label] ?? []) acc.add(c.code)
+      if (slot.type === "study")
+        for (const c of plan[slot.label] ?? []) if (!failedCodes.has(c.code)) acc.add(c.code)
       if (slot.type === "work") for (const c of coop.plan.onlineCourses[slot.id] ?? []) acc.add(c.code)
     }
     return map
-  }, [slots, plan, coop.plan.onlineCourses, completedCodes])
+  }, [slots, plan, coop.plan.onlineCourses, passedCodes, failedCodes])
 
   if (loading || coop.loading) {
     return (
@@ -95,9 +99,16 @@ export default function PlannerTerms() {
         }`}
       >
         <div className="mb-2 flex items-center justify-between">
-          <span className="font-mono text-sm font-bold text-white">{slot.label}</span>
+          <span className="flex items-center gap-2">
+            <span className="font-mono text-sm font-bold text-white">{slot.label}</span>
+            {slot.label === meta?.currentTerm && (
+              <span className="rounded-full border border-yellow-500/40 bg-yellow-500/10 px-1.5 text-[10px] font-semibold text-yellow-400">
+                Current
+              </span>
+            )}
+          </span>
           <span className="text-xs text-zinc-600">
-            {courses.reduce((u, c) => u + estimateCredit(c.code), 0).toFixed(2)} units
+            {fmtUnits(courses.reduce((u, c) => u + estimateCredit(c.code), 0))} units
           </span>
         </div>
 
@@ -142,13 +153,29 @@ export default function PlannerTerms() {
                       const before = e.clientY < r.top + r.height / 2
                       setHover({ term: slot.label, index: before ? i : i + 1 })
                     }}
-                    className="flex cursor-grab items-center gap-2 rounded-md px-1 py-1.5 transition hover:bg-white/[0.04] active:cursor-grabbing"
+                    className="relative flex cursor-grab items-center gap-2 rounded-md px-1 py-1.5 transition hover:bg-white/[0.04] active:cursor-grabbing"
                   >
                     <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${STATUS_DOT[status]}`} title={tip} />
-                    <button onClick={() => open(crs.code)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                    <button
+                      onClick={() => setMenuKey((k) => (k === `${slot.label}:${crs.code}` ? null : `${slot.label}:${crs.code}`))}
+                      className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                    >
                       <span className="font-mono text-xs font-bold text-yellow-400">{crs.code}</span>
                       <span className="truncate text-xs text-zinc-500">{crs.name}</span>
                     </button>
+
+                    {/* Grade / pass-fail for completed terms */}
+                    {doneTerms.has(slot.label) && (() => {
+                      const e = byCode.get(crs.code)
+                      if (!e) return <span className="flex-shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1.5 text-[10px] text-amber-300">grade?</span>
+                      if (e.grade === null) return <span className="flex-shrink-0 rounded border border-white/[0.1] bg-white/[0.04] px-1.5 text-[10px] text-zinc-400">CR</span>
+                      return isFailing(e.grade) ? (
+                        <span className="flex-shrink-0 rounded border border-red-500/40 bg-red-500/10 px-1.5 text-[10px] font-semibold text-red-300">{e.grade}% · Fail</span>
+                      ) : (
+                        <span className="flex-shrink-0 rounded border border-green-500/40 bg-green-500/10 px-1.5 text-[10px] text-green-300">{e.grade}%</span>
+                      )
+                    })()}
+
                     {lt.length > 0 && <LeadsToPopover codes={lt} />}
                     <button
                       onClick={() => removeCourse(slot.label, crs.code)}
@@ -157,6 +184,24 @@ export default function PlannerTerms() {
                     >
                       ✕
                     </button>
+
+                    {/* Info / Edit menu */}
+                    {menuKey === `${slot.label}:${crs.code}` && (
+                      <div className="glass-menu absolute right-6 top-8 z-40 w-32 overflow-hidden rounded-lg">
+                        <button
+                          onClick={() => { setMenuKey(null); open(crs.code) }}
+                          className="block w-full px-3 py-2 text-left text-xs text-zinc-200 transition hover:bg-white/[0.06]"
+                        >
+                          Info
+                        </button>
+                        <button
+                          onClick={() => { setMenuKey(null); navigate("/app/planner/completed") }}
+                          className="block w-full px-3 py-2 text-left text-xs text-zinc-200 transition hover:bg-white/[0.06]"
+                        >
+                          Edit grade
+                        </button>
+                      </div>
+                    )}
                   </li>
                 </Fragment>
               )
@@ -221,6 +266,8 @@ export default function PlannerTerms() {
 
   return (
     <div className={`grid grid-cols-1 gap-6 ${showAside ? "xl:grid-cols-[1fr_320px]" : ""}`}>
+      {/* Click-away backdrop for the course menu */}
+      {menuKey && <div className="fixed inset-0 z-30" onClick={() => setMenuKey(null)} />}
       <div className="space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>

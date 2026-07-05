@@ -1,7 +1,7 @@
 import { useMemo } from "react"
 import { Link } from "react-router-dom"
 import { useProfileMeta } from "../../lib/profile"
-import { useDegreePlan } from "../../lib/degreePlan"
+import { fmtUnits, useDegreePlan } from "../../lib/degreePlan"
 import { useCompleted } from "../../lib/completed"
 import {
   BMATH_DEGREE_LEVEL,
@@ -19,7 +19,7 @@ function ProgressBar({ value, max, label }: { value: number; max: number; label:
       <div className="mb-1 flex items-center justify-between text-xs">
         <span className="text-zinc-400">{label}</span>
         <span className="text-zinc-500">
-          {value.toFixed(2)} / {max.toFixed(1)} units
+          {fmtUnits(value)} / {fmtUnits(max)} units
         </span>
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
@@ -81,37 +81,26 @@ function GroupCard({ group, have }: { group: ReqGroup; have: Set<string> }) {
 export default function MyDegree() {
   const { meta } = useProfileMeta()
   const { plan } = useDegreePlan()
-  const { completed, codes: completedCodes } = useCompleted()
+  const { passedCodes, failedCodes } = useCompleted()
 
-  // Everything counted toward the degree: completed + planned courses.
+  // Passed completed + planned courses, excluding failed ones (no credit).
   const have = useMemo(() => {
-    const set = new Set<string>(completedCodes)
-    for (const list of Object.values(plan)) for (const c of list) set.add(c.code)
+    const set = new Set<string>(passedCodes)
+    for (const list of Object.values(plan))
+      for (const c of list) if (!failedCodes.has(c.code)) set.add(c.code)
     return set
-  }, [plan, completedCodes])
+  }, [plan, passedCodes, failedCodes])
 
   const { mathUnits, nonMathUnits } = useMemo(() => {
     let m = 0
     let nm = 0
-    const countCode = (code: string) => {
+    for (const code of have) {
       const u = estimateCredit(code)
       if (isMathCourse(code)) m += u
       else nm += u
     }
-    const counted = new Set<string>()
-    for (const c of completed)
-      if (!counted.has(c.code)) {
-        counted.add(c.code)
-        countCode(c.code)
-      }
-    for (const list of Object.values(plan))
-      for (const c of list)
-        if (!counted.has(c.code)) {
-          counted.add(c.code)
-          countCode(c.code)
-        }
     return { mathUnits: m, nonMathUnits: nm }
-  }, [plan, completed])
+  }, [have])
 
   const req = getProgramRequirements(meta?.program)
 
