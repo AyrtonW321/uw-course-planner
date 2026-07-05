@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 import { useProfileMeta } from "../../lib/profile"
 import { fmtUnits, useDegreePlan } from "../../lib/degreePlan"
 import { useCoopPlan } from "../../lib/coop"
-import { useCompleted } from "../../lib/completed"
+import { useAcademicRecord } from "../../lib/record"
 import {
   estimateCredit,
   getProgramRequirements,
@@ -36,7 +36,7 @@ export default function RequirementsAside({ onCollapse }: { onCollapse?: () => v
   const { meta } = useProfileMeta()
   const { plan } = useDegreePlan()
   const coop = useCoopPlan()
-  const { passedCodes, failedCodes } = useCompleted()
+  const { passedCodes, failedCodes } = useAcademicRecord()
   const req = getProgramRequirements(meta?.program)
 
   // Passed/CR completed courses + planned courses, excluding failed ones

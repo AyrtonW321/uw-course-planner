@@ -4,7 +4,8 @@ import CourseSearch from "../../components/CourseSearch"
 import LeadsToPopover from "../../components/LeadsToPopover"
 import { completedTerms, fmtUnits, useDegreePlan } from "../../lib/degreePlan"
 import { useCoopPlan, type CoopSlot } from "../../lib/coop"
-import { isFailing, useCompleted } from "../../lib/completed"
+import { isFailing } from "../../lib/completed"
+import { useAcademicRecord } from "../../lib/record"
 import { useProfileMeta } from "../../lib/profile"
 import {
   estimateCredit,
@@ -27,11 +28,11 @@ type HoverState = { term: string; index: number } | null
 
 export default function PlannerTerms() {
   const navigate = useNavigate()
-  const { plan, loading, addCourse, removeCourse, moveCourse } = useDegreePlan()
+  const { plan, lockedTerms, loading, addCourse, removeCourse, moveCourse, toggleLock } = useDegreePlan()
   const { meta } = useProfileMeta()
   const coop = useCoopPlan()
   const { resolve, leadsTo } = usePrereqIndex()
-  const { passedCodes, failedCodes, grades, byCode } = useCompleted()
+  const { passedCodes, failedCodes, bestGrades } = useAcademicRecord()
   const slots = coop.slots
   const [drag, setDrag] = useState<DragState>(null)
   const [hover, setHover] = useState<HoverState>(null)
@@ -79,7 +80,8 @@ export default function PlannerTerms() {
   const renderStudy = (slot: CoopSlot) => {
     const courses = plan[slot.label] ?? []
     const have = haveBeforeSlot[slot.id] ?? new Set<string>()
-    const isTarget = !!drag
+    const isTarget = !!drag && !lockedTerms.has(slot.label)
+    const locked = lockedTerms.has(slot.label)
 
     return (
       <div
@@ -107,8 +109,18 @@ export default function PlannerTerms() {
               </span>
             )}
           </span>
-          <span className="text-xs text-zinc-600">
-            {fmtUnits(courses.reduce((u, c) => u + estimateCredit(c.code), 0))} units
+          <span className="flex items-center gap-2">
+            <span className="text-xs text-zinc-600">
+              {fmtUnits(courses.reduce((u, c) => u + estimateCredit(c.code), 0))} units
+            </span>
+            <button
+              onClick={() => toggleLock(slot.label)}
+              title={locked ? "Unlock term" : "Lock term (no more courses)"}
+              className={`text-xs transition ${locked ? "text-yellow-400" : "text-zinc-600 hover:text-zinc-300"}`}
+              aria-label={locked ? "Unlock term" : "Lock term"}
+            >
+              {locked ? "🔒" : "🔓"}
+            </button>
           </span>
         </div>
 
@@ -121,7 +133,7 @@ export default function PlannerTerms() {
           <ul>
             {courses.map((crs, i) => {
               const clauses = resolve(crs.code)
-              const status = statusForClauses(clauses, have, grades)
+              const status = statusForClauses(clauses, have, bestGrades)
               const lt = leadsTo(crs.code)
               const tip = [
                 status === "met" ? "Prerequisites met" : status === "grade" ? "Prereq needs a grade" : "Missing a prerequisite",
@@ -164,17 +176,18 @@ export default function PlannerTerms() {
                       <span className="truncate text-xs text-zinc-500">{crs.name}</span>
                     </button>
 
-                    {/* Grade / pass-fail for completed terms */}
-                    {doneTerms.has(slot.label) && (() => {
-                      const e = byCode.get(crs.code)
-                      if (!e) return <span className="flex-shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1.5 text-[10px] text-amber-300">grade?</span>
-                      if (e.grade === null) return <span className="flex-shrink-0 rounded border border-white/[0.1] bg-white/[0.04] px-1.5 text-[10px] text-zinc-400">CR</span>
-                      return isFailing(e.grade) ? (
-                        <span className="flex-shrink-0 rounded border border-red-500/40 bg-red-500/10 px-1.5 text-[10px] font-semibold text-red-300">{e.grade}% · Fail</span>
+                    {/* Grade / pass-fail for this occurrence, in completed terms */}
+                    {doneTerms.has(slot.label) && (
+                      crs.grade === undefined ? (
+                        <span className="flex-shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1.5 text-[10px] text-amber-300">grade?</span>
+                      ) : crs.grade === null ? (
+                        <span className="flex-shrink-0 rounded border border-white/[0.1] bg-white/[0.04] px-1.5 text-[10px] text-zinc-400">CR</span>
+                      ) : isFailing(crs.grade) ? (
+                        <span className="flex-shrink-0 rounded border border-red-500/40 bg-red-500/10 px-1.5 text-[10px] font-semibold text-red-300">{crs.grade}% · Fail</span>
                       ) : (
-                        <span className="flex-shrink-0 rounded border border-green-500/40 bg-green-500/10 px-1.5 text-[10px] text-green-300">{e.grade}%</span>
+                        <span className="flex-shrink-0 rounded border border-green-500/40 bg-green-500/10 px-1.5 text-[10px] text-green-300">{crs.grade}%</span>
                       )
-                    })()}
+                    )}
 
                     {lt.length > 0 && <LeadsToPopover codes={lt} />}
                     <button
@@ -211,7 +224,13 @@ export default function PlannerTerms() {
         )}
 
         <div className="mt-2">
-          <CourseSearch placeholder="Search to add a course…" onPick={(c) => addCourse(slot.label, c)} />
+          {locked ? (
+            <p className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-center text-xs text-zinc-600">
+              🔒 Locked — unlock to add courses
+            </p>
+          ) : (
+            <CourseSearch placeholder="Search to add a course…" onPick={(c) => addCourse(slot.label, c)} />
+          )}
         </div>
       </div>
     )

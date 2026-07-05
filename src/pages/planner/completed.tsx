@@ -20,9 +20,9 @@ function GradeBadge({ grade }: { grade: number | null | undefined }) {
 }
 
 export default function CompletedPage() {
-  const { plan } = useDegreePlan()
+  const { plan, setGrade: setPlanGrade } = useDegreePlan()
   const { meta } = useProfileMeta()
-  const { completed, byCode, loading, add, remove, addMany } = useCompleted()
+  const { completed, loading, add, remove, addMany } = useCompleted()
 
   const [raw, setRaw] = useState("")
   const [parsed, setParsed] = useState<CompletedCourse[] | null>(null)
@@ -43,31 +43,34 @@ export default function CompletedPage() {
     )
   }
 
-  const setGrade = (code: string, name: string | undefined, value: string) => {
-    const v = value.trim()
-    if (v === "") {
-      remove(code)
-      return
-    }
-    const g = Math.max(0, Math.min(100, Math.round(Number(v))))
-    if (Number.isNaN(g)) return
-    add({ code, name, grade: g })
-  }
+  const gradeCls =
+    "w-16 rounded-lg border border-white/[0.08] bg-white/[0.05] px-2 py-1 text-center text-sm text-white outline-none focus:border-yellow-500/60"
 
-  const gradeInput = (code: string, name: string | undefined) => {
-    const entry = byCode.get(code)
-    return (
-      <input
-        type="number"
-        min={0}
-        max={100}
-        value={entry && entry.grade !== null ? entry.grade : ""}
-        onChange={(e) => setGrade(code, name, e.target.value)}
-        placeholder="—"
-        className="w-16 rounded-lg border border-white/[0.08] bg-white/[0.05] px-2 py-1 text-center text-sm text-white outline-none focus:border-yellow-500/60"
-        title="Final grade (%)"
-      />
-    )
+  // Planned occurrence grade (independent per term).
+  const planGradeInput = (term: string, code: string, grade: number | null | undefined) => (
+    <input
+      type="number"
+      min={0}
+      max={100}
+      value={typeof grade === "number" ? grade : ""}
+      onChange={(e) => {
+        const v = e.target.value.trim()
+        if (v === "") return setPlanGrade(term, code, undefined)
+        const g = Math.max(0, Math.min(100, Math.round(Number(v))))
+        if (!Number.isNaN(g)) setPlanGrade(term, code, g)
+      }}
+      placeholder="—"
+      className={gradeCls}
+      title="Final grade (%)"
+    />
+  )
+
+  // Standalone completed course grade (keyed by code).
+  const setCompletedGrade = (code: string, name: string | undefined, value: string) => {
+    const v = value.trim()
+    if (v === "") return remove(code)
+    const g = Math.max(0, Math.min(100, Math.round(Number(v))))
+    if (!Number.isNaN(g)) add({ code, name, grade: g })
   }
 
   return (
@@ -160,8 +163,8 @@ export default function CompletedPage() {
                       <li key={c.code} className="flex items-center gap-3 py-2.5">
                         <span className="font-mono text-sm font-bold text-yellow-400">{c.code}</span>
                         <span className="min-w-0 flex-1 truncate text-sm text-zinc-500">{c.name}</span>
-                        <GradeBadge grade={byCode.has(c.code) ? byCode.get(c.code)!.grade : undefined} />
-                        {gradeInput(c.code, c.name)}
+                        <GradeBadge grade={c.grade} />
+                        {planGradeInput(term, c.code, c.grade)}
                       </li>
                     ))}
                   </ul>
@@ -188,7 +191,16 @@ export default function CompletedPage() {
                 <span className="font-mono text-sm font-bold text-yellow-400">{c.code}</span>
                 <span className="min-w-0 flex-1 truncate text-sm text-zinc-500">{c.name ?? ""}</span>
                 <GradeBadge grade={c.grade} />
-                {gradeInput(c.code, c.name)}
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={typeof c.grade === "number" ? c.grade : ""}
+                  onChange={(e) => setCompletedGrade(c.code, c.name, e.target.value)}
+                  placeholder="—"
+                  className={gradeCls}
+                  title="Final grade (%)"
+                />
                 <button onClick={() => remove(c.code)} className="flex-shrink-0 text-xs text-zinc-600 transition hover:text-red-400" aria-label={`Remove ${c.code}`}>✕</button>
               </li>
             ))}

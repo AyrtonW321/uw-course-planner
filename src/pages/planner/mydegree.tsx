@@ -2,7 +2,7 @@ import { useMemo } from "react"
 import { Link } from "react-router-dom"
 import { useProfileMeta } from "../../lib/profile"
 import { fmtUnits, useDegreePlan } from "../../lib/degreePlan"
-import { useCompleted } from "../../lib/completed"
+import { useAcademicRecord } from "../../lib/record"
 import {
   BMATH_DEGREE_LEVEL,
   estimateCredit,
@@ -81,7 +81,7 @@ function GroupCard({ group, have }: { group: ReqGroup; have: Set<string> }) {
 export default function MyDegree() {
   const { meta } = useProfileMeta()
   const { plan } = useDegreePlan()
-  const { passedCodes, failedCodes } = useCompleted()
+  const { passedCodes, failedCodes } = useAcademicRecord()
 
   // Passed completed + planned courses, excluding failed ones (no credit).
   const have = useMemo(() => {

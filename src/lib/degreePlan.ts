@@ -4,6 +4,12 @@ import { useUserDoc } from "./userDoc"
 export type PlannedCourse = {
   code: string
   name: string
+  /**
+   * Grade for THIS occurrence. Independent per term, so the same course can be
+   * failed in one term and passed (retaken) in another.
+   *   undefined = no grade entered · null = credit (CR) · number = final grade.
+   */
+  grade?: number | null
 }
 
 /** Map of term id ("1A", "1B", "2A"…) → planned courses for that term. */
@@ -85,15 +91,21 @@ export function useDegreePlan() {
     [data]
   )
 
+  const lockedTerms = useMemo<Set<string>>(
+    () => new Set(Array.isArray(data?.lockedTerms) ? (data!.lockedTerms as string[]) : []),
+    [data]
+  )
+
   const save = useCallback((next: DegreePlan) => update({ degreePlan: next }), [update])
 
   const addCourse = useCallback(
     (termId: string, course: PlannedCourse) => {
+      if (lockedTerms.has(termId)) return // locked term — no additions
       const list = plan[termId] ?? []
       if (list.some((c) => c.code === course.code)) return
       save({ ...plan, [termId]: [...list, course] })
     },
-    [plan, save]
+    [plan, save, lockedTerms]
   )
 
   const removeCourse = useCallback(
@@ -102,16 +114,55 @@ export function useDegreePlan() {
     [plan, save]
   )
 
-  /** Move a course to a target term at a specific index (drag and drop). */
-  const moveCourse = useCallback(
-    (fromTerm: string, toTerm: string, code: string, index?: number) => {
-      const next = movePlanned(plan, fromTerm, toTerm, code, index)
-      if (next !== plan) save(next)
+  /** Set the grade for one occurrence (term + code). undefined clears it. */
+  const setGrade = useCallback(
+    (termId: string, code: string, grade: number | null | undefined) => {
+      const next = (plan[termId] ?? []).map((c) => {
+        if (c.code !== code) return c
+        if (grade === undefined) {
+          const { grade: _drop, ...rest } = c
+          void _drop
+          return rest
+        }
+        return { ...c, grade }
+      })
+      save({ ...plan, [termId]: next })
     },
     [plan, save]
   )
 
+  /** Move a course to a target term at a specific index (drag and drop). */
+  const moveCourse = useCallback(
+    (fromTerm: string, toTerm: string, code: string, index?: number) => {
+      if (lockedTerms.has(toTerm) && toTerm !== fromTerm) return
+      const next = movePlanned(plan, fromTerm, toTerm, code, index)
+      if (next !== plan) save(next)
+    },
+    [plan, save, lockedTerms]
+  )
+
+  const toggleLock = useCallback(
+    (termId: string) => {
+      const next = new Set(lockedTerms)
+      if (next.has(termId)) next.delete(termId)
+      else next.add(termId)
+      update({ lockedTerms: [...next] })
+    },
+    [lockedTerms, update]
+  )
+
   const totalCourses = Object.values(plan).reduce((n, list) => n + list.length, 0)
 
-  return { plan, loading, addCourse, removeCourse, moveCourse, save, totalCourses }
+  return {
+    plan,
+    lockedTerms,
+    loading,
+    addCourse,
+    removeCourse,
+    setGrade,
+    moveCourse,
+    toggleLock,
+    save,
+    totalCourses,
+  }
 }
