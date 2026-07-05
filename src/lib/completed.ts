@@ -8,6 +8,18 @@ export type CompletedCourse = {
   grade: number | null
 }
 
+/** UW passing grade. Below this the course earns no credit and must be retaken. */
+export const PASS_THRESHOLD = 50
+
+/** A null grade means "credit" (CR); a numeric grade passes at ≥ 50. */
+export function isPassing(grade: number | null): boolean {
+  return grade === null || grade >= PASS_THRESHOLD
+}
+
+export function isFailing(grade: number | null): boolean {
+  return grade !== null && grade < PASS_THRESHOLD
+}
+
 export function useCompleted() {
   const { data, loading, update } = useUserDoc()
 
@@ -23,6 +35,18 @@ export function useCompleted() {
     for (const c of completed) if (typeof c.grade === "number") m.set(c.code, c.grade)
     return m
   }, [completed])
+
+  const byCode = useMemo(() => new Map(completed.map((c) => [c.code, c])), [completed])
+
+  /** Codes that count for credit (passed or CR). Failed courses are excluded. */
+  const passedCodes = useMemo(
+    () => new Set(completed.filter((c) => isPassing(c.grade)).map((c) => c.code)),
+    [completed]
+  )
+  const failedCodes = useMemo(
+    () => new Set(completed.filter((c) => isFailing(c.grade)).map((c) => c.code)),
+    [completed]
+  )
 
   const persist = useCallback(
     (next: CompletedCourse[]) => update({ completed: next }),
@@ -52,7 +76,7 @@ export function useCompleted() {
     [completed, persist]
   )
 
-  return { completed, codes, grades, loading, add, remove, addMany }
+  return { completed, codes, grades, byCode, passedCodes, failedCodes, loading, add, remove, addMany }
 }
 
 /**

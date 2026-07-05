@@ -31,6 +31,18 @@ export function termProgressPct(currentTerm: string | undefined | null): number 
   return Math.round((i / ALL_TERM_IDS.length) * 100)
 }
 
+/** Academic terms strictly before the current one — i.e. already completed. */
+export function completedTerms(currentTerm: string | undefined | null): string[] {
+  if (!currentTerm) return []
+  const i = ALL_TERM_IDS.indexOf(currentTerm)
+  return i <= 0 ? [] : ALL_TERM_IDS.slice(0, i)
+}
+
+/** Format a unit total exactly (no rounding), trimming trailing zeros: 5.75, 13. */
+export function fmtUnits(n: number): string {
+  return String(Math.round(n * 100) / 100)
+}
+
 /** Pure move helper — reused by the hook and unit-tested. */
 export function movePlanned(
   plan: DegreePlan,

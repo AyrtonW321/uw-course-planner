@@ -1,5 +1,6 @@
 import { Outlet, Navigate } from "react-router-dom"
 import NavBar from "../components/navbar"
+import AlertBar from "../components/AlertBar"
 import { useProfileMeta } from "../lib/profile"
 
 export default function MainPage() {
@@ -28,6 +29,7 @@ export default function MainPage() {
   return (
     <div className="app-bg min-h-screen">
       <NavBar user={user} />
+      <AlertBar />
       <main className="mx-auto max-w-6xl px-4 py-8 text-white">
         <Outlet />
       </main>
