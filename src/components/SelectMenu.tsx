@@ -35,45 +35,48 @@ export default function SelectMenu({
         {label}
       </label>
 
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen((v) => !v)}
-        className="glass-input w-full rounded-xl px-4 py-2.5 text-left text-sm text-white outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <div className="flex items-center justify-between">
-          <span className={value ? "text-white" : "text-zinc-600"}>
-            {value || placeholder}
-          </span>
-          <span className="text-zinc-500">▾</span>
-        </div>
-      </button>
-
-      {open && !disabled && (
-        <div className="glass-pop mt-2 overflow-hidden rounded-xl">
-          {/* Fixed height: 6 rows-ish. Scroll if more */}
-          <div className="max-h-52 overflow-y-auto">
-            {options.map((opt) => (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => {
-                  onChange(opt)
-                  setOpen(false)
-                }}
-                className={`block w-full px-4 py-2 text-left text-sm transition hover:bg-white/[0.06] ${
-                  opt === value ? "bg-white/[0.06] text-yellow-400" : "text-zinc-300"
-                }`}
-              >
-                {opt}
-              </button>
-            ))}
-            {options.length === 0 && (
-              <div className="px-4 py-2 text-sm text-zinc-500">No options</div>
-            )}
+      {/* Relative wrapper so the menu overlays instead of pushing the layout. */}
+      <div className="relative">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setOpen((v) => !v)}
+          className="glass-input w-full rounded-xl px-4 py-2.5 text-left text-sm text-white outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <div className="flex items-center justify-between">
+            <span className={value ? "text-white" : "text-zinc-600"}>
+              {value || placeholder}
+            </span>
+            <span className="text-zinc-500">▾</span>
           </div>
-        </div>
-      )}
+        </button>
+
+        {open && !disabled && (
+          <div className="glass-pop absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-xl">
+            {/* Fixed height: 6 rows-ish. Scroll if more */}
+            <div className="max-h-52 overflow-y-auto">
+              {options.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt)
+                    setOpen(false)
+                  }}
+                  className={`block w-full px-4 py-2 text-left text-sm transition hover:bg-white/[0.06] ${
+                    opt === value ? "bg-white/[0.06] text-yellow-400" : "text-zinc-300"
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+              {options.length === 0 && (
+                <div className="px-4 py-2 text-sm text-zinc-500">No options</div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
