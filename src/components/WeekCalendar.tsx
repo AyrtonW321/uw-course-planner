@@ -24,9 +24,19 @@ type Props = {
   conflicts?: Set<string>
   /** Smaller layout for side-by-side compare. */
   compact?: boolean
+  /** Click a class block (e.g. to swap sections). */
+  onEventClick?: (entry: TimetableEntry) => void
+  /** Section id to highlight as selected. */
+  selectedId?: string
 }
 
-export default function WeekCalendar({ entries, conflicts, compact = false }: Props) {
+export default function WeekCalendar({
+  entries,
+  conflicts,
+  compact = false,
+  onEventClick,
+  selectedId,
+}: Props) {
   const pxPerMin = compact ? 0.5 : 0.9
   const height = (END - START) * pxPerMin
 
@@ -34,6 +44,7 @@ export default function WeekCalendar({ entries, conflicts, compact = false }: Pr
     const colorByCode = new Map<string, Color>()
     const out: {
       key: string
+      entry: TimetableEntry
       code: string
       type: string
       day: number
@@ -52,6 +63,7 @@ export default function WeekCalendar({ entries, conflicts, compact = false }: Pr
       for (const m of e.meetings) {
         out.push({
           key: `${e.sectionId}-${m.day}-${m.start}`,
+          entry: e,
           code: e.code,
           type: e.type,
           day: m.day,
@@ -107,12 +119,14 @@ export default function WeekCalendar({ entries, conflicts, compact = false }: Pr
               .map((e) => {
                 const top = (e.start - START) * pxPerMin
                 const h = (e.end - e.start) * pxPerMin
+                const selected = selectedId === e.entry.sectionId
                 return (
                   <div
                     key={e.key}
+                    onClick={onEventClick ? () => onEventClick(e.entry) : undefined}
                     className={`absolute left-0.5 right-0.5 overflow-hidden rounded-md border px-1 py-0.5 backdrop-blur-sm ${
-                      e.conflict ? "ring-2 ring-red-500/70" : ""
-                    }`}
+                      onEventClick ? "cursor-pointer" : ""
+                    } ${e.conflict ? "ring-2 ring-red-500/70" : selected ? "ring-2 ring-yellow-400/80" : ""}`}
                     style={{
                       top,
                       height: h,
