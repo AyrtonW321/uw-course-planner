@@ -80,7 +80,7 @@ export default function NavBar({ user }: NavBarProps) {
           </button>
 
           {open && (
-            <div className="glass-pop absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl">
+            <div className="glass-menu absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl">
               <div className="px-4 py-3">
                 <p className="truncate text-sm font-medium text-white">{displayName}</p>
                 <p className="truncate text-xs text-zinc-500">{user.email}</p>
