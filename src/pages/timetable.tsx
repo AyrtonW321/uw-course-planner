@@ -1,49 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
-import { DAY_LABELS, formatTime } from "../lib/courses"
-import { useTimetable } from "../lib/timetable"
+import { useTimetable, type TimetableEntry } from "../lib/timetable"
 import { ALL_TERM_IDS } from "../lib/degreePlan"
 import { useProfileMeta } from "../lib/profile"
+import { useSchedules } from "../lib/schedules"
+import { findConflicts, conflictFreeCombos, type ChosenSection } from "../lib/conflicts"
+import { buildICS, downloadICS } from "../lib/ics"
+import { getCourseWithSections, getTermInfo } from "../lib/catalog"
 import SelectMenu from "../components/SelectMenu"
-import { glassCard, goldButton } from "../lib/ui"
-
-const START = 8 * 60 // 8:00am
-const END = 21 * 60 // 9:00pm
-const PX_PER_MIN = 0.9
-const HEIGHT = (END - START) * PX_PER_MIN
-
-const PALETTE = [
-  { bg: "rgba(250,204,21,0.14)", border: "rgba(250,204,21,0.55)", text: "#fde68a" },
-  { bg: "rgba(96,165,250,0.14)", border: "rgba(96,165,250,0.55)", text: "#bfdbfe" },
-  { bg: "rgba(52,211,153,0.14)", border: "rgba(52,211,153,0.55)", text: "#a7f3d0" },
-  { bg: "rgba(244,114,182,0.14)", border: "rgba(244,114,182,0.55)", text: "#fbcfe8" },
-  { bg: "rgba(167,139,250,0.14)", border: "rgba(167,139,250,0.55)", text: "#ddd6fe" },
-  { bg: "rgba(251,146,60,0.14)", border: "rgba(251,146,60,0.55)", text: "#fed7aa" },
-]
-
-type Color = (typeof PALETTE)[number]
-
-type CalEvent = {
-  key: string
-  code: string
-  type: string
-  day: number
-  start: number
-  end: number
-  location: string
-  color: Color
-}
-
-const HOURS = Array.from({ length: (END - START) / 60 + 1 }, (_, i) => START / 60 + i)
+import WeekCalendar from "../components/WeekCalendar"
+import { glassCard, goldButton, glassButton } from "../lib/ui"
 
 export default function TimetablePage() {
-  const { entries, loading, remove } = useTimetable()
+  const { entries, loading, persist } = useTimetable()
   const { meta, loading: profileLoading } = useProfileMeta()
+  const { schedules, save: saveSchedule, remove: removeSchedule } = useSchedules()
+
   const [term, setTerm] = useState("1A")
   const inited = useRef(false)
+  const [saveName, setSaveName] = useState("")
+  const [showSave, setShowSave] = useState(false)
+  const [compareId, setCompareId] = useState("")
+  const [suggesting, setSuggesting] = useState(false)
+  const [suggestions, setSuggestions] = useState<ChosenSection[][] | null>(null)
+  const [suggestTermCode, setSuggestTermCode] = useState("")
 
-  // On first load, open to the user's current term (from their profile).
-  // Fall back to the first term that has courses, else 1A.
   useEffect(() => {
     if (inited.current || profileLoading) return
     const current = meta?.currentTerm
@@ -65,35 +46,76 @@ export default function TimetablePage() {
     [entries, term]
   )
 
-  const { events, courses, totalHours } = useMemo(() => {
-    const colorByCode = new Map<string, Color>()
-    const courseList: { sectionId: string; code: string; title: string; color: Color }[] = []
-    const evts: CalEvent[] = []
-    let minutes = 0
+  const conflicts = useMemo(() => findConflicts(termEntries), [termEntries])
 
-    for (const e of termEntries) {
-      if (!colorByCode.has(e.code)) {
-        colorByCode.set(e.code, PALETTE[colorByCode.size % PALETTE.length])
-      }
-      const color = colorByCode.get(e.code)!
-      courseList.push({ sectionId: e.sectionId, code: e.code, title: e.title, color })
-
-      for (const m of e.meetings) {
-        evts.push({
-          key: `${e.sectionId}-${m.day}-${m.start}`,
-          code: e.code,
-          type: e.type,
-          day: m.day,
-          start: m.start,
-          end: m.end,
-          location: m.location,
-          color,
-        })
-        minutes += m.end - m.start
-      }
-    }
-    return { events: evts, courses: courseList, totalHours: minutes / 60 }
+  const totalHours = useMemo(() => {
+    let m = 0
+    for (const e of termEntries) for (const mt of e.meetings) m += mt.end - mt.start
+    return m / 60
   }, [termEntries])
+
+  const courses = useMemo(() => {
+    const seen = new Map<string, string>()
+    for (const e of termEntries) if (!seen.has(e.code)) seen.set(e.code, e.title)
+    return [...seen.entries()].map(([code, title]) => ({ code, title }))
+  }, [termEntries])
+
+  // Replace all of the current term's entries.
+  const applyToTerm = (list: TimetableEntry[]) => {
+    const others = entries.filter((e) => (e.term ?? "1A") !== term)
+    persist([...others, ...list.map((e) => ({ ...e, term }))])
+  }
+
+  const removeEntry = (sectionId: string) =>
+    persist(entries.filter((e) => e.sectionId !== sectionId))
+
+  const onExport = () => {
+    if (termEntries.length === 0) return
+    downloadICS(`uw-timetable-${term}.ics`, buildICS(termEntries, `UW ${term}`))
+  }
+
+  const onSave = () => {
+    saveSchedule(saveName, term, termEntries)
+    setSaveName("")
+    setShowSave(false)
+  }
+
+  const onSuggest = async () => {
+    setSuggesting(true)
+    setSuggestions(null)
+    try {
+      const t = await getTermInfo()
+      setSuggestTermCode(t.termCode)
+      const opts = []
+      for (const c of courses) {
+        const course = await getCourseWithSections(t.termCode, c.code)
+        if (course && course.sections.length) {
+          opts.push({ code: course.code, title: course.name, sections: course.sections })
+        }
+      }
+      setSuggestions(conflictFreeCombos(opts, 3))
+    } finally {
+      setSuggesting(false)
+    }
+  }
+
+  const applySuggestion = (combo: ChosenSection[]) => {
+    const list: TimetableEntry[] = combo.map((c) => ({
+      sectionId: c.section.id,
+      code: c.code,
+      title: c.title,
+      type: c.section.type,
+      section: c.section.section,
+      termCode: suggestTermCode,
+      term,
+      instructor: c.section.instructor,
+      meetings: c.section.meetings,
+    }))
+    applyToTerm(list)
+    setSuggestions(null)
+  }
+
+  const compareSchedule = schedules.find((s) => s.id === compareId)
 
   if (loading) {
     return (
@@ -104,138 +126,165 @@ export default function TimetablePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Header + toolbar */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white">Your Timetable</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            {totalHours > 0
-              ? `${totalHours.toFixed(1)} hours of class in ${term}`
-              : `No courses in ${term}`}
+            {totalHours > 0 ? `${totalHours.toFixed(1)} hours of class in ${term}` : `No courses in ${term}`}
           </p>
         </div>
-        <div className="flex items-end gap-2">
-          <div className="w-24">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="w-20">
             <SelectMenu label="Term" value={term} options={[...ALL_TERM_IDS]} onChange={setTerm} />
           </div>
+          <button onClick={onExport} disabled={termEntries.length === 0} className={`${glassButton} px-3 py-2.5 text-sm font-medium`}>
+            Export .ics
+          </button>
+          <button onClick={() => setShowSave((v) => !v)} disabled={termEntries.length === 0} className={`${glassButton} px-3 py-2.5 text-sm font-medium`}>
+            Save
+          </button>
+          <button onClick={onSuggest} disabled={courses.length === 0 || suggesting} className={`${glassButton} px-3 py-2.5 text-sm font-medium`}>
+            {suggesting ? "Finding…" : "Suggest fix"}
+          </button>
           <Link to="/app/courses" className={`${goldButton} px-4 py-2.5 text-sm`}>
-            + Add courses
+            + Add
           </Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_260px]">
-        {/* Calendar */}
-        <div className={`${glassCard} overflow-hidden p-4`}>
-          {/* Day headers */}
-          <div className="mb-2 grid grid-cols-[48px_repeat(5,1fr)]">
-            <div />
-            {DAY_LABELS.map((d) => (
-              <div key={d} className="px-2 text-center text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                {d}
-              </div>
-            ))}
-          </div>
+      {/* Save name row */}
+      {showSave && (
+        <div className={`${glassCard} flex flex-wrap items-center gap-2 p-3`}>
+          <input
+            value={saveName}
+            onChange={(e) => setSaveName(e.target.value)}
+            placeholder={`Name this ${term} schedule`}
+            className="glass-input min-w-[200px] flex-1 rounded-lg px-3 py-2 text-sm text-white outline-none"
+          />
+          <button onClick={onSave} className={`${goldButton} px-4 py-2 text-sm`}>Save snapshot</button>
+        </div>
+      )}
 
-          {/* Grid body */}
-          <div className="grid grid-cols-[48px_repeat(5,1fr)]" style={{ height: HEIGHT }}>
-            {/* Time gutter */}
-            <div className="relative">
-              {HOURS.map((h) => (
-                <div
-                  key={h}
-                  className="absolute right-1.5 -translate-y-1/2 text-[10px] text-zinc-600"
-                  style={{ top: (h * 60 - START) * PX_PER_MIN }}
-                >
-                  {formatTime(h * 60)}
+      {/* Conflict banner */}
+      {conflicts.pairs.length > 0 && (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <p className="font-semibold">{conflicts.pairs.length} time conflict{conflicts.pairs.length === 1 ? "" : "s"}</p>
+          <ul className="mt-1 space-y-0.5 text-xs text-red-300/90">
+            {conflicts.pairs.map((p, i) => (
+              <li key={i}>
+                {p.a.code} {p.a.section} overlaps {p.b.code} {p.b.section}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1.5 text-xs text-red-300/70">Try “Suggest fix” for a conflict-free combination.</p>
+        </div>
+      )}
+
+      {/* Suggestions */}
+      {suggestions && (
+        <div className={`${glassCard} p-4`}>
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-white">Conflict-free suggestions</h2>
+            <button onClick={() => setSuggestions(null)} className="text-xs text-zinc-500 hover:text-white">Dismiss</button>
+          </div>
+          {suggestions.length === 0 ? (
+            <p className="text-sm text-zinc-500">No conflict-free combination found for these courses.</p>
+          ) : (
+            <div className="space-y-2">
+              {suggestions.map((combo, i) => (
+                <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                  <div className="flex flex-1 flex-wrap gap-1.5">
+                    {combo.map((c) => (
+                      <span key={c.section.id} className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[11px]">
+                        <span className="font-mono font-bold text-yellow-400">{c.code}</span>{" "}
+                        <span className="text-zinc-400">{c.section.type} {c.section.section}</span>
+                      </span>
+                    ))}
+                  </div>
+                  <button onClick={() => applySuggestion(combo)} className={`${goldButton} px-3 py-1.5 text-xs`}>Apply</button>
                 </div>
               ))}
             </div>
+          )}
+        </div>
+      )}
 
-            {/* Day columns */}
-            {DAY_LABELS.map((_, dayIndex) => (
-              <div key={dayIndex} className="relative border-l border-white/[0.05]">
-                {HOURS.map((h) => (
-                  <div
-                    key={h}
-                    className="absolute left-0 right-0 border-t border-white/[0.04]"
-                    style={{ top: (h * 60 - START) * PX_PER_MIN }}
-                  />
-                ))}
-
-                {events
-                  .filter((e) => e.day === dayIndex)
-                  .map((e) => {
-                    const top = (e.start - START) * PX_PER_MIN
-                    const height = (e.end - e.start) * PX_PER_MIN
-                    return (
-                      <div
-                        key={e.key}
-                        className="absolute left-0.5 right-0.5 overflow-hidden rounded-md border px-1.5 py-1 backdrop-blur-sm"
-                        style={{ top, height, backgroundColor: e.color.bg, borderColor: e.color.border }}
-                        title={`${e.code} · ${e.location}`}
-                      >
-                        <p className="truncate text-[11px] font-bold" style={{ color: e.color.text }}>
-                          {e.code}
-                        </p>
-                        <p className="truncate text-[9px] text-zinc-400">
-                          {e.type} · {e.location}
-                        </p>
-                        {height > 38 && (
-                          <p className="truncate text-[9px] text-zinc-500">
-                            {formatTime(e.start)}–{formatTime(e.end)}
-                          </p>
-                        )}
-                      </div>
-                    )
-                  })}
-              </div>
-            ))}
+      {/* Compare mode */}
+      {compareSchedule ? (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className={`${glassCard} p-4`}>
+            <p className="mb-2 text-sm font-semibold text-white">Current — {term}</p>
+            <WeekCalendar entries={termEntries} conflicts={conflicts.sectionIds} compact />
+          </div>
+          <div className={`${glassCard} p-4`}>
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-sm font-semibold text-white">{compareSchedule.name}</p>
+              <button onClick={() => setCompareId("")} className="text-xs text-zinc-500 hover:text-white">Close</button>
+            </div>
+            <WeekCalendar entries={compareSchedule.entries} compact />
           </div>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_260px]">
+          <div className={`${glassCard} overflow-hidden p-4`}>
+            <WeekCalendar entries={termEntries} conflicts={conflicts.sectionIds} />
+          </div>
 
-        {/* Sidebar */}
-        <div className="space-y-4">
-          <div className={`${glassCard} p-5`}>
-            <h2 className="mb-3 text-sm font-semibold text-white">Your Courses</h2>
-            {courses.length === 0 ? (
-              <p className="text-sm text-zinc-500">
-                Nothing here yet.{" "}
-                <Link to="/app/courses" className="text-yellow-400 hover:text-yellow-300">
-                  Browse courses
-                </Link>{" "}
-                to build your schedule.
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {courses.map((c) => (
-                  <li
-                    key={c.sectionId}
-                    className="flex items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2"
-                  >
-                    <span
-                      className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                      style={{ backgroundColor: c.color.border }}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-mono text-xs font-bold text-white">{c.code}</p>
-                      <p className="truncate text-[11px] text-zinc-500">{c.title}</p>
-                    </div>
-                    <button
-                      onClick={() => remove(c.sectionId)}
-                      className="flex-shrink-0 text-xs text-zinc-600 transition hover:text-red-400"
-                      aria-label={`Remove ${c.code}`}
-                      title="Remove"
-                    >
-                      ✕
-                    </button>
-                  </li>
-                ))}
-              </ul>
+          <div className="space-y-4">
+            <div className={`${glassCard} p-5`}>
+              <h2 className="mb-3 text-sm font-semibold text-white">Your Courses</h2>
+              {courses.length === 0 ? (
+                <p className="text-sm text-zinc-500">
+                  Nothing here yet.{" "}
+                  <Link to="/app/courses" className="text-yellow-400 hover:text-yellow-300">Browse courses</Link>.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {termEntries.map((e) => (
+                    <li key={e.sectionId} className="flex items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-mono text-xs font-bold text-white">
+                          {e.code} <span className="text-zinc-500">{e.type} {e.section}</span>
+                        </p>
+                        <p className="truncate text-[11px] text-zinc-500">{e.title}</p>
+                      </div>
+                      <button
+                        onClick={() => removeEntry(e.sectionId)}
+                        className="flex-shrink-0 text-xs text-zinc-600 transition hover:text-red-400"
+                        aria-label={`Remove ${e.code}`}
+                      >
+                        ✕
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Saved schedules */}
+            {schedules.length > 0 && (
+              <div className={`${glassCard} p-5`}>
+                <h2 className="mb-3 text-sm font-semibold text-white">Saved Schedules</h2>
+                <ul className="space-y-2">
+                  {schedules.map((s) => (
+                    <li key={s.id} className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-medium text-white">{s.name}</p>
+                        <p className="text-[10px] text-zinc-500">{s.term} · {s.entries.length} sections</p>
+                      </div>
+                      <button onClick={() => applyToTerm(s.entries)} className="text-[11px] text-yellow-400 hover:text-yellow-300" title="Load into current term">Load</button>
+                      <button onClick={() => setCompareId(s.id)} className="text-[11px] text-zinc-400 hover:text-white">Compare</button>
+                      <button onClick={() => removeSchedule(s.id)} className="text-xs text-zinc-600 hover:text-red-400" aria-label="Delete">✕</button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
