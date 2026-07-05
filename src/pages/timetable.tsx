@@ -383,7 +383,7 @@ export default function TimetablePage() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px] lg:items-start">
           <div className={`${glassCard} overflow-hidden p-4`}>
             <p className="mb-2 text-[11px] text-zinc-600">Click a class to swap sections.</p>
             <WeekCalendar
