@@ -13,6 +13,7 @@ const ProfilePage = lazy(() => import("./pages/profilepage"))
 const TimetablePage = lazy(() => import("./pages/timetable"))
 const CoursesPage = lazy(() => import("./pages/courses"))
 const CourseInfoPage = lazy(() => import("./pages/courseinfo"))
+const AdvisorPage = lazy(() => import("./pages/advisor"))
 const PlannerLayout = lazy(() => import("./pages/planner/PlannerLayout"))
 const PlannerTerms = lazy(() => import("./pages/planner/terms"))
 const MyDegree = lazy(() => import("./pages/planner/mydegree"))
@@ -44,6 +45,7 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="courses" element={<CoursesPage />} />
           <Route path="courses/:code" element={<CourseInfoPage />} />
+          <Route path="advisor" element={<AdvisorPage />} />
           <Route path="planner" element={<PlannerLayout />}>
             <Route index element={<PlannerTerms />} />
             <Route path="degree" element={<MyDegree />} />

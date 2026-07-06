@@ -55,6 +55,9 @@ export default function NavBar({ user }: NavBarProps) {
           <Link className="text-zinc-400 transition hover:text-white" to="/app/planner">
             Degree Planner
           </Link>
+          <Link className="text-zinc-400 transition hover:text-white" to="/app/advisor">
+            Advisor
+          </Link>
         </div>
 
         {/* Right: dropdown */}

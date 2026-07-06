@@ -140,14 +140,14 @@ export default function Dashboard() {
           </div>
           <p className="flex-1 text-sm text-zinc-500">
             Ask anything about your degree — “What should I take next term?” or
-            “Can I graduate on time?”
+            “Which electives fit machine learning?”
           </p>
-          <button
-            disabled
-            className="mt-4 cursor-not-allowed rounded-lg border border-white/[0.08] bg-white/[0.03] py-2 text-sm font-medium text-zinc-500"
+          <Link
+            to="/app/advisor"
+            className="mt-4 rounded-lg bg-yellow-400 py-2 text-center text-sm font-bold text-black transition hover:bg-yellow-300"
           >
-            Coming soon
-          </button>
+            Open Advisor
+          </Link>
         </Card>
       </div>
 
