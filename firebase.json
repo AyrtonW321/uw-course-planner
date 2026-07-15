@@ -8,10 +8,6 @@
   "storage": {
     "rules": "storage.rules"
   },
-  "functions": {
-    "source": "functions",
-    "codebase": "default"
-  },
   "apphosting": {
     "backendId": "my-web-app",
     "rootDir": "/",

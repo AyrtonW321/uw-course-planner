@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react"
+import type { Content } from "firebase/ai"
 import { useAdvisorTools } from "../lib/advisor/tools"
 import { runAdvisorTurn } from "../lib/advisor/agent"
-import type { ChatMessage, Content } from "../lib/advisor/types"
+import type { ChatMessage } from "../lib/advisor/types"
 import { errorMessage } from "../lib/errors"
 import { glassCard, glassInput, goldButton } from "../lib/ui"
 
@@ -15,7 +16,7 @@ const STARTERS = [
 export default function AdvisorPage() {
   const { declarations, execute } = useAdvisorTools()
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [contents, setContents] = useState<Content[]>([])
+  const [history, setHistory] = useState<Content[]>([])
   const [input, setInput] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -33,13 +34,13 @@ export default function AdvisorPage() {
     setMessages((m) => [...m, { role: "user", text: q }])
     setBusy(true)
     try {
-      const { text: reply, contents: next } = await runAdvisorTurn({
-        priorContents: contents,
+      const { text: reply, history: next } = await runAdvisorTurn({
+        history,
         userText: q,
         declarations,
         execute,
       })
-      setContents(next)
+      setHistory(next)
       setMessages((m) => [...m, { role: "model", text: reply }])
     } catch (err) {
       setError(errorMessage(err, "The advisor is unavailable right now."))

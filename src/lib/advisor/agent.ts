@@ -1,74 +1,69 @@
-import { callAdvisor } from "./client"
+import {
+  getGenerativeModel,
+  type Content,
+  type FunctionDeclaration,
+  type Part,
+} from "firebase/ai"
+import { ai } from "../firebase"
 import { SYSTEM_INSTRUCTION } from "./systemPrompt"
-import type { Content, Part, ToolDeclaration, ToolExecutor } from "./types"
+import type { ToolExecutor } from "./types"
 
 const MAX_TOOL_ROUNDS = 6
 
 type TurnArgs = {
-  /** Full prior conversation (raw Gemini contents, incl. tool turns). */
-  priorContents: Content[]
+  /** Prior conversation history (Gemini Content[]), empty on the first turn. */
+  history: Content[]
   userText: string
-  declarations: ToolDeclaration[]
+  declarations: FunctionDeclaration[]
   execute: ToolExecutor
   model?: string
 }
 
-type TurnResult = { text: string; contents: Content[] }
+type TurnResult = { text: string; history: Content[] }
 
 /**
- * Run one user turn: send to Gemini, execute any tool calls locally against the
- * app's own logic, feed results back, and loop until Gemini returns text.
+ * Run one user turn against Gemini (via Firebase AI Logic). Executes any tool
+ * calls locally against the app's own logic, feeds results back, and loops
+ * until the model returns text. Returns the reply plus updated history.
  */
 export async function runAdvisorTurn({
-  priorContents,
+  history,
   userText,
   declarations,
   execute,
   model,
 }: TurnArgs): Promise<TurnResult> {
-  const contents: Content[] = [
-    ...priorContents,
-    { role: "user", parts: [{ text: userText }] },
-  ]
-  const tools = [{ functionDeclarations: declarations }]
+  const genModel = getGenerativeModel(ai, {
+    model: model ?? "gemini-2.5-flash",
+    systemInstruction: SYSTEM_INSTRUCTION,
+    tools: [{ functionDeclarations: declarations }],
+  })
+
+  const chat = genModel.startChat({ history })
+  let result = await chat.sendMessage(userText)
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-    const content = await callAdvisor({
-      contents,
-      systemInstruction: SYSTEM_INSTRUCTION,
-      tools,
-      model,
-    })
-    if (!content) throw new Error("The advisor returned no response.")
-
-    contents.push(content)
-
-    const calls = (content.parts ?? []).filter((p) => p.functionCall)
+    const calls = result.response.functionCalls() ?? []
     if (calls.length === 0) {
-      const text = (content.parts ?? [])
-        .map((p) => p.text ?? "")
-        .join("")
-        .trim()
-      return { text: text || "…", contents }
+      return { text: result.response.text() || "…", history: await chat.getHistory() }
     }
 
-    // Execute each requested tool locally and return the results.
-    const responseParts: Part[] = []
-    for (const p of calls) {
-      const fc = p.functionCall!
+    const parts: Part[] = []
+    for (const call of calls) {
       let response: Record<string, unknown>
       try {
-        response = await execute(fc.name, fc.args ?? {})
+        response = await execute(call.name, (call.args ?? {}) as Record<string, unknown>)
       } catch (err) {
         response = { error: err instanceof Error ? err.message : "Tool failed." }
       }
-      responseParts.push({ functionResponse: { name: fc.name, response } })
+      parts.push({ functionResponse: { name: call.name, response } })
     }
-    contents.push({ role: "user", parts: responseParts })
+
+    result = await chat.sendMessage(parts)
   }
 
   return {
     text: "I did a lot of digging but couldn't wrap that up — try narrowing the question.",
-    contents,
+    history: await chat.getHistory(),
   }
 }

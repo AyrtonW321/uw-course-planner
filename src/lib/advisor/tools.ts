@@ -1,4 +1,5 @@
 import { useCallback } from "react"
+import { Schema, type FunctionDeclaration } from "firebase/ai"
 import { useProfileMeta } from "../profile"
 import { useDegreePlan } from "../degreePlan"
 import { useCompleted } from "../completed"
@@ -8,59 +9,55 @@ import { usePrereqIndex } from "../usePrereq"
 import { getCourseWithSections, getTermInfo, listAllCourses } from "../catalog"
 import { getRatings } from "../uwflow"
 import { getProgramRequirements, statusForClauses } from "../requirements"
-import type { ToolDeclaration, ToolExecutor } from "./types"
+import type { ToolExecutor } from "./types"
 
-export const TOOL_DECLARATIONS: ToolDeclaration[] = [
+export const TOOL_DECLARATIONS: FunctionDeclaration[] = [
   {
     name: "get_student_context",
     description:
       "The student's program, current term, co-op, planned courses per term, completed courses with grades, passed/failed courses, and current alerts. Call this first.",
-    parameters: { type: "object", properties: {} },
+    parameters: Schema.object({ properties: {} }),
   },
   {
     name: "search_courses",
     description:
       "Search the live course catalog by keyword and optional subject code. Returns matching course codes and names to look up further.",
-    parameters: {
-      type: "object",
+    parameters: Schema.object({
       properties: {
-        query: { type: "string", description: "Keyword to match in code or title" },
-        subject: { type: "string", description: "Optional subject code, e.g. AMATH, CS, STAT" },
+        query: Schema.string({ description: "Keyword to match in code or title" }),
+        subject: Schema.string({ description: "Optional subject code, e.g. AMATH, CS, STAT" }),
       },
-      required: ["query"],
-    },
+      optionalProperties: ["subject"],
+    }),
   },
   {
     name: "get_course_details",
     description:
       "Full details for specific courses: description, prerequisite text, and UW Flow ratings (liked/useful/easy). Use this before describing or recommending a course.",
-    parameters: {
-      type: "object",
+    parameters: Schema.object({
       properties: {
-        codes: { type: "array", items: { type: "string" }, description: "Course codes, e.g. ['AMATH 449','CS 479']" },
+        codes: Schema.array({
+          items: Schema.string(),
+          description: "Course codes, e.g. ['AMATH 449','CS 479']",
+        }),
       },
-      required: ["codes"],
-    },
+    }),
   },
   {
     name: "check_eligibility",
     description:
       "Whether the student meets a course's prerequisites, based on their passed courses and grades. Returns met | grade | missing plus the prerequisite structure.",
-    parameters: {
-      type: "object",
-      properties: { code: { type: "string" } },
-      required: ["code"],
-    },
+    parameters: Schema.object({ properties: { code: Schema.string() } }),
   },
   {
     name: "get_requirements",
     description:
       "The student's program requirements and which requirement groups are satisfied by their passed/planned courses, plus unit targets.",
-    parameters: { type: "object", properties: {} },
+    parameters: Schema.object({ properties: {} }),
   },
 ]
 
-export function useAdvisorTools(): { declarations: ToolDeclaration[]; execute: ToolExecutor } {
+export function useAdvisorTools(): { declarations: FunctionDeclaration[]; execute: ToolExecutor } {
   const { meta } = useProfileMeta()
   const { plan } = useDegreePlan()
   const { completed } = useCompleted()

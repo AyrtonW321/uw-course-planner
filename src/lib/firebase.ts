@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app"
 import { getAuth } from "firebase/auth"
 import { getFirestore } from "firebase/firestore"
 import { getStorage } from "firebase/storage"
-import { getFunctions } from "firebase/functions"
+import { getAI, GoogleAIBackend } from "firebase/ai"
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -18,4 +18,8 @@ const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 export const db = getFirestore(app)
 export const storage = getStorage(app)
-export const functions = getFunctions(app)
+
+// Firebase AI Logic via the Gemini Developer API backend — runs on the free
+// Spark plan (no Blaze/billing). The Gemini key is managed by Firebase, not
+// exposed in the client bundle.
+export const ai = getAI(app, { backend: new GoogleAIBackend() })
