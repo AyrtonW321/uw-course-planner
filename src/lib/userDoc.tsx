@@ -38,6 +38,7 @@ export function UserDocProvider({ children }: { children: ReactNode }) {
   const [authLoading, setAuthLoading] = useState(true)
   const [data, setData] = useState<DocumentData | null>(null)
   const [docLoading, setDocLoading] = useState(true)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
     return onAuthStateChanged(auth, (u) => {
@@ -72,10 +73,18 @@ export function UserDocProvider({ children }: { children: ReactNode }) {
     async (partial: Record<string, unknown>) => {
       if (!user) return
       // Optimistic local merge; onSnapshot confirms with the server value.
+      const prevData = data
       setData((prev) => ({ ...(prev ?? {}), ...partial }))
-      await setDoc(doc(db, "users", user.uid), partial, { merge: true })
+      try {
+        await setDoc(doc(db, "users", user.uid), partial, { merge: true })
+      } catch (err) {
+        // Roll back the optimistic merge so the UI doesn't show unsaved changes as saved.
+        setData(prevData)
+        setSaveError(err instanceof Error ? err.message : "Failed to save changes")
+        throw err
+      }
     },
-    [user]
+    [user, data]
   )
 
   const value = useMemo<UserDocContextValue>(
@@ -83,7 +92,27 @@ export function UserDocProvider({ children }: { children: ReactNode }) {
     [user, authLoading, data, docLoading, update]
   )
 
-  return <UserDocContext.Provider value={value}>{children}</UserDocContext.Provider>
+  return (
+    <UserDocContext.Provider value={value}>
+      {children}
+      {saveError && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-xl border border-red-500/30 bg-red-950/90 px-4 py-3 text-sm text-red-200 shadow-lg backdrop-blur"
+        >
+          <span>Couldn't save your changes: {saveError}</span>
+          <button
+            onClick={() => setSaveError(null)}
+            className="text-red-300 hover:text-white"
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+    </UserDocContext.Provider>
+  )
 }
 
 export function useUserDoc(): UserDocContextValue {

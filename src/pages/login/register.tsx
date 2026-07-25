@@ -141,7 +141,7 @@ export default function Register() {
         {/* Card */}
         <div className="glass rounded-2xl px-8 py-8">
           {error && (
-            <div className="mb-5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <div role="alert" aria-live="polite" className="mb-5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
               {error}
             </div>
           )}
@@ -159,7 +159,7 @@ export default function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                autoComplete="off"
+                autoComplete="email"
               />
             </div>
 
@@ -208,7 +208,7 @@ export default function Register() {
               )}
 
               {/* Rules */}
-              <ul className="mt-2 space-y-1.5">
+              <ul aria-live="polite" className="mt-2 space-y-1.5">
                 {rules.map((r) => (
                   <li key={r.id} className={`flex items-center gap-2 text-xs transition-colors ${ruleClass(r.state)}`}>
                     <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full transition-colors ${dotClass(r.state)}`} />

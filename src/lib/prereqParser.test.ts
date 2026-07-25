@@ -42,4 +42,11 @@ describe("parsePrereqClauses", () => {
     expect(parsePrereqClauses(undefined)).toEqual([])
     expect(parsePrereqClauses("")).toEqual([])
   })
+
+  it("does not scan course codes out of prose when there is no Prereq: label", () => {
+    const r = parsePrereqClauses(
+      "Continuation of CS 246. Antireq: CS 247. Students may not receive credit for both."
+    )
+    expect(codes(r)).toEqual([])
+  })
 })

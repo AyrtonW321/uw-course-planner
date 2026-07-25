@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
 import ConstellationCanvas from "../../components/ConstellationCanvas"
 import SelectMenu from "../../components/SelectMenu"
@@ -10,7 +10,8 @@ import {
   type GradTerm,
   type ProfileMeta,
 } from "../../lib/profile"
-import { COOP_SEQUENCES, defaultSequenceId, saveCoopSequence } from "../../lib/coop"
+import { COOP_SEQUENCES, defaultSequenceId } from "../../lib/coop"
+import { useUserDoc } from "../../lib/userDoc"
 import { ALL_TERM_IDS } from "../../lib/degreePlan"
 import { errorMessage } from "../../lib/errors"
 import { goldButton, glassButton } from "../../lib/ui"
@@ -21,12 +22,21 @@ const TERMS: GradTerm[] = ["Fall", "Winter", "Spring"]
 export default function Onboarding() {
   const navigate = useNavigate()
   const { user, meta, loading, complete, save } = useProfileMeta()
+  const { update } = useUserDoc()
 
   const [step, setStep] = useState(0)
   const [draft, setDraft] = useState<ProfileMeta>(EMPTY_META)
   const [seqId, setSeqId] = useState(defaultSequenceId("yes"))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Warn before an accidental tab close/refresh loses wizard progress.
+  useEffect(() => {
+    if (step === 0) return
+    const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault()
+    window.addEventListener("beforeunload", onBeforeUnload)
+    return () => window.removeEventListener("beforeunload", onBeforeUnload)
+  }, [step])
 
   const currentYear = new Date().getFullYear()
   const yearOptions = useMemo(
@@ -215,7 +225,7 @@ export default function Onboarding() {
     setSaving(true)
     try {
       await save(draft)
-      if (draft.coop === "yes" && user) await saveCoopSequence(user.uid, seqId)
+      if (draft.coop === "yes" && user) await update({ coopPlan: { sequenceId: seqId } })
       navigate("/app", { replace: true })
     } catch (err) {
       setError(errorMessage(err, "Failed to save your profile. Try again."))
@@ -262,7 +272,7 @@ export default function Onboarding() {
           <div className="mt-6">{current.body}</div>
 
           {error && (
-            <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <div role="alert" aria-live="polite" className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
               {error}
             </div>
           )}

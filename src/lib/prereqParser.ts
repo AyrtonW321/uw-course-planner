@@ -17,9 +17,9 @@ import type { PrereqClause, ReqCourse } from "./requirements"
 const CODE_RE = /([A-Z]{2,8})\s*(\d{3}[A-Z]?)|(\d{3}[A-Z]?)/g
 
 function prereqSegment(text: string): string {
-  let seg = text
   const pi = text.toLowerCase().indexOf("prereq")
-  if (pi >= 0) seg = text.slice(pi)
+  if (pi < 0) return "" // no "Prereq:" label — don't scan unrelated prose (antireqs, descriptions) for course codes
+  let seg = text.slice(pi)
   for (const kw of ["coreq", "antireq"]) {
     const i = seg.toLowerCase().indexOf(kw)
     if (i >= 0) seg = seg.slice(0, i)
@@ -50,9 +50,9 @@ function gradeMap(seg: string): Map<string, number> {
   // courses (e.g. "(MATH 106 or 114 or 115 with a grade of at least 70%)").
   // Groups with multiple percentages are left to the per-course patterns below.
   for (const g of seg.match(/\(([^)]*)\)/g) ?? []) {
-    const pcts = g.match(/\d{2,3}\s*%/g)
-    if (pcts && pcts.length === 1) {
-      const grade = Number(pcts[0].match(/\d{2,3}/)![0])
+    const pcts = [...g.matchAll(/(\d{2,3})\s*%/g)]
+    if (pcts.length === 1) {
+      const grade = Number(pcts[0][1])
       for (const code of scanCodes(g)) grades.set(code, grade)
     }
   }

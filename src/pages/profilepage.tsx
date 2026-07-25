@@ -50,7 +50,7 @@ function EditableField({
           <button
             type="button"
             onClick={onEdit}
-            className="absolute right-2.5 top-1/2 hidden -translate-y-1/2 items-center justify-center rounded-md border border-white/[0.08] bg-white/[0.06] p-1.5 text-zinc-300 backdrop-blur-md transition hover:text-yellow-400 group-hover:flex"
+            className="absolute right-2.5 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-md border border-white/[0.08] bg-white/[0.06] p-1.5 text-zinc-300 opacity-0 backdrop-blur-md transition hover:text-yellow-400 group-hover:opacity-100 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400/70"
             aria-label={`Edit ${label}`}
             title={`Edit ${label}`}
           >
@@ -107,6 +107,21 @@ export default function ProfilePage() {
   useEffect(() => {
     if (meta) setDraft(meta)
   }, [meta])
+
+  // Revoke the previous object URL whenever the preview changes or unmounts, so the
+  // chosen file isn't pinned in memory for the rest of the page's life.
+  useEffect(() => {
+    if (!photoPreview) return
+    return () => URL.revokeObjectURL(photoPreview)
+  }, [photoPreview])
+
+  // Warn before an accidental tab close/refresh discards an in-progress edit.
+  useEffect(() => {
+    if (!editName && !editEmail && !editPassword && !editSettings) return
+    const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault()
+    window.addEventListener("beforeunload", onBeforeUnload)
+    return () => window.removeEventListener("beforeunload", onBeforeUnload)
+  }, [editName, editEmail, editPassword, editSettings])
 
   const avatarSrc = useMemo(
     () => photoPreview || user?.photoURL || DEFAULT_AVATAR,
@@ -269,12 +284,12 @@ export default function ProfilePage() {
       <h1 className="text-2xl font-bold tracking-tight text-white">Profile</h1>
 
       {error && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <div role="alert" aria-live="polite" className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
           {error}
         </div>
       )}
       {message && (
-        <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-300">
+        <div role="status" aria-live="polite" className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-300">
           {message}
         </div>
       )}
@@ -296,7 +311,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={onPickPhoto}
-                className="absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-sm transition group-hover:bg-black/50 group-hover:opacity-100"
+                className="absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-sm transition group-hover:bg-black/50 group-hover:opacity-100 focus:bg-black/50 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400/70"
                 title="Change profile picture"
               >
                 <span className="text-xs font-semibold text-white">📷 Change</span>

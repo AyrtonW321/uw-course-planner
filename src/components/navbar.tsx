@@ -17,15 +17,22 @@ export default function NavBar({ user }: NavBarProps) {
     return user.displayName || user.email?.split("@")[0] || "User"
   }, [user.displayName, user.email])
 
-  const photoUrl = user.photoURL || "default.jpg"
+  const photoUrl = user.photoURL || "/default.jpg"
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       if (!menuRef.current) return
       if (!menuRef.current.contains(e.target as Node)) setOpen(false)
     }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false)
+    }
     document.addEventListener("mousedown", onDocClick)
-    return () => document.removeEventListener("mousedown", onDocClick)
+    document.addEventListener("keydown", onKey)
+    return () => {
+      document.removeEventListener("mousedown", onDocClick)
+      document.removeEventListener("keydown", onKey)
+    }
   }, [])
 
   const handleLogout = async () => {
@@ -67,6 +74,8 @@ export default function NavBar({ user }: NavBarProps) {
             onClick={() => setOpen((v) => !v)}
             className="glass glass-hover flex items-center gap-2 rounded-full px-2 py-1"
             aria-label="Open user menu"
+            aria-haspopup="menu"
+            aria-expanded={open}
           >
             <img
               src={photoUrl}

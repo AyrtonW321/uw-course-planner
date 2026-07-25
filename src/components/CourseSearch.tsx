@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { getTermInfo, listAllCourses } from "../lib/catalog"
 import type { Course } from "../lib/courses"
@@ -22,6 +22,7 @@ export default function CourseSearch({ placeholder = "Add course…", onPick }: 
   const [rect, setRect] = useState<DOMRect | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const menuRef = useRef<HTMLDivElement | null>(null)
+  const listboxId = useId()
 
   useEffect(() => {
     let alive = true
@@ -81,6 +82,12 @@ export default function CourseSearch({ placeholder = "Add course…", onPick }: 
     <>
       <input
         ref={inputRef}
+        aria-label={placeholder}
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={listboxId}
+        aria-autocomplete="list"
+        aria-activedescendant={open && matches[active] ? `${listboxId}-${active}` : undefined}
         value={query}
         onChange={(e) => {
           setQuery(e.target.value)
@@ -110,6 +117,8 @@ export default function CourseSearch({ placeholder = "Add course…", onPick }: 
         createPortal(
           <div
             ref={menuRef}
+            id={listboxId}
+            role="listbox"
             style={{
               position: "fixed",
               top: rect!.bottom + 4,
@@ -121,6 +130,9 @@ export default function CourseSearch({ placeholder = "Add course…", onPick }: 
             {matches.map((c, i) => (
               <button
                 key={c.code}
+                id={`${listboxId}-${i}`}
+                role="option"
+                aria-selected={i === active}
                 type="button"
                 onMouseEnter={() => setActive(i)}
                 onClick={() => pick(c)}

@@ -277,6 +277,7 @@ export default function TimetablePage() {
             </p>
           </div>
           <textarea
+            aria-label="Pasted Quest class schedule"
             value={importText}
             onChange={(e) => setImportText(e.target.value)}
             rows={5}
@@ -317,6 +318,7 @@ export default function TimetablePage() {
       {showSave && (
         <div className={`${glassCard} flex flex-wrap items-center gap-2 p-3`}>
           <input
+            aria-label={`Name this ${term} schedule`}
             value={saveName}
             onChange={(e) => setSaveName(e.target.value)}
             placeholder={`Name this ${term} schedule`}
@@ -328,7 +330,7 @@ export default function TimetablePage() {
 
       {/* Conflict banner */}
       {conflicts.pairs.length > 0 && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+        <div role="status" aria-live="polite" className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           <p className="font-semibold">{conflicts.pairs.length} time conflict{conflicts.pairs.length === 1 ? "" : "s"}</p>
           <ul className="mt-1 space-y-0.5 text-xs text-red-300/90">
             {conflicts.pairs.map((p, i) => (

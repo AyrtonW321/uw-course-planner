@@ -77,7 +77,7 @@ export default function CoopPage() {
             + Add work term
           </button>
         </div>
-        <p className="mb-3 text-xs text-zinc-600">Drag terms to reorder your sequence.</p>
+        <p className="mb-3 text-xs text-zinc-600">Drag terms to reorder your sequence, or use the arrows.</p>
 
         <div className="flex flex-wrap gap-2">
           {slots.map((slot, i) => (
@@ -105,8 +105,24 @@ export default function CoopPage() {
             >
               <span>{slot.label}</span>
               <button
+                onClick={() => reorderSlots(i, i - 1)}
+                disabled={i === 0}
+                className="text-zinc-500 transition hover:text-white disabled:opacity-20 disabled:hover:text-zinc-500"
+                aria-label={`Move ${slot.label} earlier`}
+              >
+                ◀
+              </button>
+              <button
+                onClick={() => reorderSlots(i, i + 1)}
+                disabled={i === slots.length - 1}
+                className="text-zinc-500 transition hover:text-white disabled:opacity-20 disabled:hover:text-zinc-500"
+                aria-label={`Move ${slot.label} later`}
+              >
+                ▶
+              </button>
+              <button
                 onClick={() => removeSlot(slot.id)}
-                className="text-zinc-500 opacity-0 transition hover:text-red-400 group-hover:opacity-100"
+                className="text-zinc-500 opacity-0 transition hover:text-red-400 focus:opacity-100 group-hover:opacity-100"
                 aria-label={`Remove ${slot.label}`}
               >
                 ✕
@@ -155,6 +171,7 @@ export default function CoopPage() {
 
                 {record.status === "employed" && (
                   <input
+                    aria-label="Employer"
                     value={record.employer ?? ""}
                     onChange={(e) => setWork(slot.id, { ...record, employer: e.target.value })}
                     placeholder="Employer (e.g. Shopify)"

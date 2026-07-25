@@ -30,38 +30,53 @@ export function usePrereqIndex() {
       return
     }
     let alive = true
-    getTermInfo()
-      .then((t) => listAllCourses(t.termCode).then((courses) => ({ t, courses })))
-      .then(({ t, courses }) => {
-        const prereqs = new Map<string, PrereqClause[]>()
-        for (const c of courses) {
-          const parsed = parsePrereqClauses(c.requirements)
-          if (parsed.length) prereqs.set(c.code, parsed)
-        }
+    let retryTimer: ReturnType<typeof setTimeout> | undefined
+    let retried = false
 
-        // Reverse edges: a course leads to X if it appears in any alternative
-        // of any of X's clauses.
-        const leadsTo = new Map<string, string[]>()
-        for (const [code, clauses] of prereqs.entries()) {
-          const seen = new Set<string>()
-          for (const clause of clauses) {
-            for (const alt of clause) {
-              if (seen.has(alt.code)) continue
-              seen.add(alt.code)
-              const arr = leadsTo.get(alt.code) ?? []
-              if (!arr.includes(code)) arr.push(code)
-              leadsTo.set(alt.code, arr)
+    const load = () => {
+      getTermInfo()
+        .then((t) => listAllCourses(t.termCode).then((courses) => ({ t, courses })))
+        .then(({ t, courses }) => {
+          const prereqs = new Map<string, PrereqClause[]>()
+          for (const c of courses) {
+            const parsed = parsePrereqClauses(c.requirements)
+            if (parsed.length) prereqs.set(c.code, parsed)
+          }
+
+          // Reverse edges: a course leads to X if it appears in any alternative
+          // of any of X's clauses.
+          const leadsTo = new Map<string, string[]>()
+          for (const [code, clauses] of prereqs.entries()) {
+            const seen = new Set<string>()
+            for (const clause of clauses) {
+              for (const alt of clause) {
+                if (seen.has(alt.code)) continue
+                seen.add(alt.code)
+                const arr = leadsTo.get(alt.code) ?? []
+                if (!arr.includes(code)) arr.push(code)
+                leadsTo.set(alt.code, arr)
+              }
             }
           }
-        }
 
-        const idx: Index = { prereqs, leadsTo }
-        cache = { term: t.termCode, index: idx }
-        if (alive) setIndex(idx)
-      })
-      .catch(() => {})
+          const idx: Index = { prereqs, leadsTo }
+          cache = { term: t.termCode, index: idx }
+          if (alive) setIndex(idx)
+        })
+        .catch(() => {
+          // A transient network blip shouldn't disable the parsed index for the whole
+          // session — retry once before settling on the hand-curated fallback.
+          if (alive && !retried) {
+            retried = true
+            retryTimer = setTimeout(load, 3000)
+          }
+        })
+    }
+    load()
+
     return () => {
       alive = false
+      clearTimeout(retryTimer)
     }
   }, [])
 

@@ -31,6 +31,8 @@ export default function AlertBar() {
       >
         <button
           onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-controls="alert-bar-list"
           className="flex w-full items-center gap-3 px-4 py-2.5 text-left"
         >
           <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${hasFailure ? "bg-red-500" : "bg-amber-400"}`} />
@@ -41,7 +43,7 @@ export default function AlertBar() {
         </button>
 
         {open && (
-          <ul className="divide-y divide-white/[0.05] border-t border-white/[0.06]">
+          <ul id="alert-bar-list" className="divide-y divide-white/[0.05] border-t border-white/[0.06]">
             {alerts.map((a) => (
               <li key={a.id}>
                 <Link

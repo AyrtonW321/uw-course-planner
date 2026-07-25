@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from "react"
+import { Fragment, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import CourseSearch from "../../components/CourseSearch"
 import LeadsToPopover from "../../components/LeadsToPopover"
@@ -40,6 +40,26 @@ export default function PlannerTerms() {
   const [menuKey, setMenuKey] = useState<string | null>(null)
 
   const doneTerms = useMemo(() => new Set(completedTerms(meta?.currentTerm)), [meta?.currentTerm])
+  const studyTermLabels = useMemo(() => slots.filter((s) => s.type === "study").map((s) => s.label), [slots])
+
+  // Close the course Info/Edit menu on Escape (the click-away backdrop is mouse-only).
+  useEffect(() => {
+    if (!menuKey) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuKey(null)
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [menuKey])
+
+  /** Nearest unlocked study term before/after `label`, or null if none. */
+  const adjacentUnlockedTerm = (label: string, dir: -1 | 1): string | null => {
+    const i = studyTermLabels.indexOf(label)
+    for (let j = i + dir; j >= 0 && j < studyTermLabels.length; j += dir) {
+      if (!lockedTerms.has(studyTermLabels[j])) return studyTermLabels[j]
+    }
+    return null
+  }
 
   // Cumulative course codes taken before each slot. Seeded with passed
   // completed courses; failed courses earn no credit and are excluded.
@@ -170,6 +190,8 @@ export default function PlannerTerms() {
                     <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${STATUS_DOT[status]}`} title={tip} />
                     <button
                       onClick={() => setMenuKey((k) => (k === `${slot.label}:${crs.code}` ? null : `${slot.label}:${crs.code}`))}
+                      aria-haspopup="menu"
+                      aria-expanded={menuKey === `${slot.label}:${crs.code}`}
                       className="flex min-w-0 flex-1 items-center gap-2 text-left"
                     >
                       <span className="font-mono text-xs font-bold text-yellow-400">{crs.code}</span>
@@ -199,22 +221,47 @@ export default function PlannerTerms() {
                     </button>
 
                     {/* Info / Edit menu */}
-                    {menuKey === `${slot.label}:${crs.code}` && (
-                      <div className="glass-menu absolute right-6 top-8 z-40 w-32 overflow-hidden rounded-lg">
-                        <button
-                          onClick={() => { setMenuKey(null); open(crs.code) }}
-                          className="block w-full px-3 py-2 text-left text-xs text-zinc-200 transition hover:bg-white/[0.06]"
-                        >
-                          Info
-                        </button>
-                        <button
-                          onClick={() => { setMenuKey(null); navigate("/app/planner/completed") }}
-                          className="block w-full px-3 py-2 text-left text-xs text-zinc-200 transition hover:bg-white/[0.06]"
-                        >
-                          Edit grade
-                        </button>
-                      </div>
-                    )}
+                    {menuKey === `${slot.label}:${crs.code}` && (() => {
+                      const prevTerm = adjacentUnlockedTerm(slot.label, -1)
+                      const nextTerm = adjacentUnlockedTerm(slot.label, 1)
+                      return (
+                        <div role="menu" className="glass-menu absolute right-6 top-8 z-40 w-40 overflow-hidden rounded-lg">
+                          <button
+                            role="menuitem"
+                            onClick={() => { setMenuKey(null); open(crs.code) }}
+                            className="block w-full px-3 py-2 text-left text-xs text-zinc-200 transition hover:bg-white/[0.06]"
+                          >
+                            Info
+                          </button>
+                          <button
+                            role="menuitem"
+                            onClick={() => { setMenuKey(null); navigate("/app/planner/completed") }}
+                            className="block w-full px-3 py-2 text-left text-xs text-zinc-200 transition hover:bg-white/[0.06]"
+                          >
+                            Edit grade
+                          </button>
+                          {/* Keyboard alternative to drag-and-drop for moving a course between terms. */}
+                          {prevTerm && (
+                            <button
+                              role="menuitem"
+                              onClick={() => { setMenuKey(null); moveCourse(slot.label, prevTerm, crs.code) }}
+                              className="block w-full px-3 py-2 text-left text-xs text-zinc-200 transition hover:bg-white/[0.06]"
+                            >
+                              Move to {prevTerm}
+                            </button>
+                          )}
+                          {nextTerm && (
+                            <button
+                              role="menuitem"
+                              onClick={() => { setMenuKey(null); moveCourse(slot.label, nextTerm, crs.code) }}
+                              className="block w-full px-3 py-2 text-left text-xs text-zinc-200 transition hover:bg-white/[0.06]"
+                            >
+                              Move to {nextTerm}
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })()}
                   </li>
                 </Fragment>
               )

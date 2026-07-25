@@ -34,13 +34,18 @@ export default function LeadsToPopover({ codes }: Props) {
       if (btnRef.current?.contains(t) || menuRef.current?.contains(t)) return
       setOpen(false)
     }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false)
+    }
     window.addEventListener("scroll", onMove, true)
     window.addEventListener("resize", onMove)
     document.addEventListener("mousedown", onDown)
+    document.addEventListener("keydown", onKey)
     return () => {
       window.removeEventListener("scroll", onMove, true)
       window.removeEventListener("resize", onMove)
       document.removeEventListener("mousedown", onDown)
+      document.removeEventListener("keydown", onKey)
     }
   }, [open])
 
@@ -54,6 +59,9 @@ export default function LeadsToPopover({ codes }: Props) {
           setOpen((v) => !v)
         }}
         title="Courses this leads to"
+        aria-label={`Courses this leads to (${codes.length})`}
+        aria-haspopup="menu"
+        aria-expanded={open}
         className={`flex-shrink-0 rounded-full border px-1.5 text-[10px] transition ${
           open
             ? "border-yellow-500/40 bg-yellow-500/10 text-yellow-300"

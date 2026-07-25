@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react"
 
 export type ComboOption = { value: string; label: string }
 
@@ -25,9 +25,11 @@ export default function Combobox({
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
   const ref = useRef<HTMLDivElement | null>(null)
+  const listboxId = useId()
 
-  // Keep the input in sync when the value changes from outside.
-  useEffect(() => setQuery(value), [value])
+  // Keep the input in sync when the value changes from outside. useLayoutEffect
+  // (not useEffect) avoids a one-frame flash of the stale query before it catches up.
+  useLayoutEffect(() => setQuery(value), [value])
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -68,6 +70,11 @@ export default function Combobox({
       <div className="relative">
         <input
           type="text"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={listboxId}
+          aria-autocomplete="list"
+          aria-activedescendant={open && filtered[active] ? `${listboxId}-${active}` : undefined}
           value={query}
           placeholder={placeholder}
           onChange={(e) => {
@@ -89,16 +96,20 @@ export default function Combobox({
               if (filtered[active]) commit(filtered[active])
             } else if (e.key === "Escape") {
               setOpen(false)
+              setQuery(value) // revert unconfirmed text, matching outside-click behavior
             }
           }}
           className="glass-input w-full rounded-xl px-4 py-2.5 text-sm text-white outline-none"
         />
 
         {open && filtered.length > 0 && (
-          <div className="glass-pop absolute z-20 mt-2 max-h-60 w-full overflow-y-auto rounded-xl">
+          <div id={listboxId} role="listbox" className="glass-pop absolute z-20 mt-2 max-h-60 w-full overflow-y-auto rounded-xl">
             {filtered.map((o, i) => (
               <button
                 key={o.value}
+                id={`${listboxId}-${i}`}
+                role="option"
+                aria-selected={o.value === value}
                 type="button"
                 onMouseEnter={() => setActive(i)}
                 onClick={() => commit(o)}

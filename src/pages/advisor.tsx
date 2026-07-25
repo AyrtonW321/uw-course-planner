@@ -13,10 +13,26 @@ const STARTERS = [
   "Do I meet the prerequisites for AMATH 449?",
 ]
 
+// Chat is ephemeral by design (not part of the user's Firestore doc), but a refresh
+// shouldn't silently discard the conversation — keep it in sessionStorage instead.
+const SESSION_KEY = "advisor-chat"
+
+function loadSession(): { messages: ChatMessage[]; history: Content[] } {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY)
+    if (!raw) return { messages: [], history: [] }
+    const parsed = JSON.parse(raw)
+    return { messages: parsed.messages ?? [], history: parsed.history ?? [] }
+  } catch {
+    return { messages: [], history: [] }
+  }
+}
+
 export default function AdvisorPage() {
   const { declarations, execute } = useAdvisorTools()
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [history, setHistory] = useState<Content[]>([])
+  const [session] = useState(loadSession)
+  const [messages, setMessages] = useState<ChatMessage[]>(session.messages)
+  const [history, setHistory] = useState<Content[]>(session.history)
   const [input, setInput] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,6 +41,14 @@ export default function AdvisorPage() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, busy])
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ messages, history }))
+    } catch {
+      // sessionStorage unavailable (e.g. private browsing quota) — chat just won't survive a refresh.
+    }
+  }, [messages, history])
 
   const send = async (text: string) => {
     const q = text.trim()
@@ -84,7 +108,7 @@ export default function AdvisorPage() {
             </div>
           </div>
         ) : (
-          <ul className="space-y-4">
+          <ul role="log" aria-live="polite" aria-relevant="additions" className="space-y-4">
             {messages.map((m, i) => (
               <li key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
                 <div
@@ -101,9 +125,10 @@ export default function AdvisorPage() {
             {busy && (
               <li className="flex justify-start">
                 <div className="flex items-center gap-1.5 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3">
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-0.2s]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-0.1s]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500" />
+                  <span className="sr-only">Advisor is typing…</span>
+                  <span aria-hidden="true" className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-0.2s]" />
+                  <span aria-hidden="true" className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-0.1s]" />
+                  <span aria-hidden="true" className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500" />
                 </div>
               </li>
             )}
@@ -113,7 +138,7 @@ export default function AdvisorPage() {
       </div>
 
       {error && (
-        <div className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-400">
+        <div role="alert" aria-live="polite" className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-400">
           {error}
         </div>
       )}
@@ -127,6 +152,7 @@ export default function AdvisorPage() {
         className="mt-3 flex items-end gap-2"
       >
         <textarea
+          aria-label="Message to advisor"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {

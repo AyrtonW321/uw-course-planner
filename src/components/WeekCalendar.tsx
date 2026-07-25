@@ -124,8 +124,20 @@ export default function WeekCalendar({
                   <div
                     key={e.key}
                     onClick={onEventClick ? () => onEventClick(e.entry) : undefined}
+                    role={onEventClick ? "button" : undefined}
+                    tabIndex={onEventClick ? 0 : undefined}
+                    onKeyDown={
+                      onEventClick
+                        ? (ev) => {
+                            if (ev.key === "Enter" || ev.key === " ") {
+                              ev.preventDefault()
+                              onEventClick(e.entry)
+                            }
+                          }
+                        : undefined
+                    }
                     className={`absolute left-0.5 right-0.5 overflow-hidden rounded-md border px-1 py-0.5 backdrop-blur-sm ${
-                      onEventClick ? "cursor-pointer" : ""
+                      onEventClick ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70" : ""
                     } ${e.conflict ? "ring-2 ring-red-500/70" : selected ? "ring-2 ring-yellow-400/80" : ""}`}
                     style={{
                       top,

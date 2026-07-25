@@ -62,6 +62,7 @@ export default function CompletedPage() {
       placeholder="—"
       className={gradeCls}
       title="Final grade (%)"
+      aria-label={`Final grade for ${code}, ${term} (%)`}
     />
   )
 
@@ -94,6 +95,7 @@ export default function CompletedPage() {
             Paste your unofficial transcript (from Quest). We'll pull out course codes and grades.
           </p>
           <textarea
+            aria-label="Pasted transcript text"
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
             rows={5}

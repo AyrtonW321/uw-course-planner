@@ -1,6 +1,4 @@
 import { useCallback, useMemo } from "react"
-import { doc, setDoc } from "firebase/firestore"
-import { db } from "./firebase"
 import { useUserDoc } from "./userDoc"
 import type { PlannedCourse } from "./degreePlan"
 
@@ -93,11 +91,6 @@ export function defaultSequenceId(coop: "yes" | "no" | undefined): string {
   return coop === "no" ? "regular" : "seq1"
 }
 
-/** Persist just the chosen sequence (used during onboarding). */
-export async function saveCoopSequence(uid: string, sequenceId: string) {
-  await setDoc(doc(db, "users", uid), { coopPlan: { sequenceId } }, { merge: true })
-}
-
 export type WorkRecord = {
   status: "employed" | "unemployed"
   employer?: string
@@ -159,7 +152,7 @@ export function useCoopPlan() {
   const addWorkTerm = useCallback(() => {
     const slots = effectiveSlots(plan).map((s) => ({ ...s }))
     const n = slots.filter((s) => s.type === "work").length + 1
-    slots.push({ id: `WT-${Date.now()}`, type: "work", label: `WT${n}` })
+    slots.push({ id: `WT-${crypto.randomUUID()}`, type: "work", label: `WT${n}` })
     persist({ ...plan, slots })
   }, [plan, persist])
 

@@ -75,6 +75,7 @@ export default function RequirementsAside({ onCollapse }: { onCollapse?: () => v
               <button
                 onClick={onCollapse}
                 title="Minimize"
+                aria-label="Minimize"
                 className="rounded border border-white/[0.08] px-1.5 text-xs text-zinc-400 transition hover:text-white"
               >
                 ✕

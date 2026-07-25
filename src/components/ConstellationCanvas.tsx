@@ -83,9 +83,10 @@ export default function ConstellationCanvas() {
         }
       }
 
-      animId = requestAnimationFrame(draw)
+      if (!reducedMotion) animId = requestAnimationFrame(draw)
     }
 
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     draw()
 
     return () => {
@@ -97,6 +98,7 @@ export default function ConstellationCanvas() {
   return (
     <canvas
       ref={canvasRef}
+      aria-hidden="true"
       className="pointer-events-none fixed inset-0 z-0"
     />
   )

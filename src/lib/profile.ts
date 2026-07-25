@@ -1,6 +1,5 @@
 import { useCallback, useMemo } from "react"
-import { doc, getDoc, setDoc, type DocumentData } from "firebase/firestore"
-import { db } from "./firebase"
+import type { DocumentData } from "firebase/firestore"
 import { useUserDoc } from "./userDoc"
 
 export type GradTerm = "Fall" | "Winter" | "Spring"
@@ -39,16 +38,6 @@ export function metaFromDoc(d: DocumentData | null | undefined): ProfileMeta {
     gradYear: d?.gradYear ?? null,
     currentTerm: d?.currentTerm ?? "",
   }
-}
-
-export async function loadProfileMeta(uid: string): Promise<ProfileMeta | null> {
-  const snap = await getDoc(doc(db, "users", uid))
-  if (!snap.exists()) return null
-  return metaFromDoc(snap.data())
-}
-
-export async function saveProfileMeta(uid: string, meta: Partial<ProfileMeta>) {
-  await setDoc(doc(db, "users", uid), meta, { merge: true })
 }
 
 /**

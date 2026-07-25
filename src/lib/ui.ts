@@ -15,7 +15,7 @@ export const glassButton =
   "rounded-xl glass glass-hover text-zinc-100 disabled:opacity-50 disabled:cursor-not-allowed"
 
 export const goldButton =
-  "rounded-xl btn-gold font-bold text-black focus:outline-none focus:ring-2 focus:ring-yellow-400/60 focus:ring-offset-2 focus:ring-offset-black disabled:cursor-not-allowed"
+  "rounded-xl btn-gold font-bold text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:cursor-not-allowed"
 
 export const labelText =
   "block text-xs font-semibold uppercase tracking-widest text-zinc-400"
