@@ -4,7 +4,7 @@ import { useAdvisorTools } from "../lib/advisor/tools"
 import { runAdvisorTurn } from "../lib/advisor/agent"
 import type { ChatMessage } from "../lib/advisor/types"
 import { errorMessage } from "../lib/errors"
-import { glassCard, glassInput, goldButton } from "../lib/ui"
+import { cardSurface, headingSm, inputSurface, primaryButton } from "../lib/ui"
 
 const STARTERS = [
   "What should I take next term?",
@@ -74,10 +74,10 @@ export default function AdvisorPage() {
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-9rem)] max-w-3xl flex-col">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-1 flex-col">
       <div className="mb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-white">Academic Advisor</h1>
-        <p className="mt-1 text-sm text-zinc-500">
+        <h1 className={headingSm}>Academic Advisor</h1>
+        <p className="mt-1 text-sm text-fog">
           Ask about courses, prerequisites, degree progress, or what fits your interests. Advice is
           grounded in your plan and the live catalog — always confirm graduation-critical choices
           with your official advisor.
@@ -85,13 +85,13 @@ export default function AdvisorPage() {
       </div>
 
       {/* Transcript */}
-      <div className={`${glassCard} flex-1 overflow-y-auto p-4`}>
+      <div className={`${cardSurface} flex-1 overflow-y-auto p-4`}>
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-yellow-500/10 text-lg font-bold text-yellow-400">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gold/10 text-lg font-medium text-gold">
               AI
             </div>
-            <p className="max-w-sm text-sm text-zinc-500">
+            <p className="max-w-sm text-sm text-fog">
               I can reason over your plan, grades, requirements, and real course content. Try one of
               these:
             </p>
@@ -100,7 +100,7 @@ export default function AdvisorPage() {
                 <button
                   key={s}
                   onClick={() => send(s)}
-                  className="rounded-full border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-xs text-zinc-300 transition hover:border-yellow-500/30 hover:text-yellow-300"
+                  className="rounded-full border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-xs text-fog transition hover:border-gold/30 hover:text-gold"
                 >
                   {s}
                 </button>
@@ -114,8 +114,8 @@ export default function AdvisorPage() {
                 <div
                   className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm ${
                     m.role === "user"
-                      ? "bg-yellow-400 text-black"
-                      : "border border-white/[0.08] bg-white/[0.04] text-zinc-200"
+                      ? "bg-gold text-black"
+                      : "border border-white/[0.08] bg-white/[0.04] text-mist"
                   }`}
                 >
                   {m.text}
@@ -126,9 +126,9 @@ export default function AdvisorPage() {
               <li className="flex justify-start">
                 <div className="flex items-center gap-1.5 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3">
                   <span className="sr-only">Advisor is typing…</span>
-                  <span aria-hidden="true" className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-0.2s]" />
-                  <span aria-hidden="true" className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-0.1s]" />
-                  <span aria-hidden="true" className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500" />
+                  <span aria-hidden="true" className="h-1.5 w-1.5 animate-bounce rounded-full bg-ash [animation-delay:-0.2s]" />
+                  <span aria-hidden="true" className="h-1.5 w-1.5 animate-bounce rounded-full bg-ash [animation-delay:-0.1s]" />
+                  <span aria-hidden="true" className="h-1.5 w-1.5 animate-bounce rounded-full bg-ash" />
                 </div>
               </li>
             )}
@@ -163,9 +163,9 @@ export default function AdvisorPage() {
           }}
           rows={1}
           placeholder="Ask your advisor…"
-          className={`${glassInput} max-h-40 flex-1 resize-none`}
+          className={`${inputSurface} max-h-40 flex-1 resize-none`}
         />
-        <button type="submit" disabled={busy || !input.trim()} className={`${goldButton} px-5 py-2.5 text-sm`}>
+        <button type="submit" disabled={busy || !input.trim()} className={`${primaryButton} px-5 py-2.5 text-sm`}>
           Send
         </button>
       </form>

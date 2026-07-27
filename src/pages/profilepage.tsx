@@ -17,7 +17,7 @@ import {
   type GradTerm,
   type ProfileMeta,
 } from "../lib/profile"
-import { glassCard, glassInput, goldButton, glassButton, labelText } from "../lib/ui"
+import { cardSurface, heading, headingSm, inputSurface, primaryButton, subtleButton, labelText } from "../lib/ui"
 
 const DEFAULT_AVATAR = "/default.jpg"
 const TERMS: GradTerm[] = ["Fall", "Winter", "Spring"]
@@ -50,7 +50,7 @@ function EditableField({
           <button
             type="button"
             onClick={onEdit}
-            className="absolute right-2.5 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-md border border-white/[0.08] bg-white/[0.06] p-1.5 text-zinc-300 opacity-0 backdrop-blur-md transition hover:text-yellow-400 group-hover:opacity-100 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400/70"
+            className="absolute right-2.5 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-md border border-white/[0.08] bg-white/[0.06] p-1.5 text-mist opacity-0 backdrop-blur-md transition hover:text-gold group-hover:opacity-100 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70"
             aria-label={`Edit ${label}`}
             title={`Edit ${label}`}
           >
@@ -68,8 +68,8 @@ function EditableField({
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between border-b border-white/[0.05] py-3 last:border-0">
-      <span className="text-sm text-zinc-500">{label}</span>
-      <span className="text-sm font-medium text-white">{value || "—"}</span>
+      <span className="text-sm text-ash">{label}</span>
+      <span className="text-sm font-medium text-bone">{value || "—"}</span>
     </div>
   )
 }
@@ -140,12 +140,12 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20 text-zinc-400">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-700 border-t-yellow-400" />
+      <div className="flex justify-center py-20 text-fog">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/[0.1] border-t-gold" />
       </div>
     )
   }
-  if (!user) return <div className="text-white">Not signed in.</div>
+  if (!user) return <div className="text-bone">Not signed in.</div>
 
   const flash = (msg: string) => {
     setMessage(msg)
@@ -280,8 +280,8 @@ export default function ProfilePage() {
     meta?.gradTerm && meta?.gradYear ? `${meta.gradTerm} ${meta.gradYear}` : ""
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight text-white">Profile</h1>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <h1 className={heading}>Profile</h1>
 
       {error && (
         <div role="alert" aria-live="polite" className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
@@ -295,8 +295,8 @@ export default function ProfilePage() {
       )}
 
       {/* Identity + account */}
-      <div className={`${glassCard} p-6`}>
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-[200px_1fr]">
+      <div className={`${cardSurface} p-6`}>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-[240px_1fr]">
           {/* Avatar */}
           <div className="flex flex-col items-center">
             <div className="group relative h-36 w-36 overflow-hidden rounded-full border border-white/[0.1]">
@@ -311,10 +311,10 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={onPickPhoto}
-                className="absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-sm transition group-hover:bg-black/50 group-hover:opacity-100 focus:bg-black/50 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400/70"
+                className="absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-sm transition group-hover:bg-black/50 group-hover:opacity-100 focus:bg-black/50 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70"
                 title="Change profile picture"
               >
-                <span className="text-xs font-semibold text-white">📷 Change</span>
+                <span className="text-xs font-medium text-bone">📷 Change</span>
               </button>
             </div>
             <input
@@ -324,14 +324,14 @@ export default function ProfilePage() {
               className="hidden"
               onChange={onPhotoChange}
             />
-            <p className="mt-3 text-center text-xs text-zinc-500">{user.email}</p>
+            <p className="mt-3 text-center text-xs text-ash">{user.email}</p>
           </div>
 
           {/* Account fields */}
           <div className="space-y-4">
             <EditableField label="Display name" editing={editName} onEdit={() => setEditName(true)}>
               <input
-                className={glassInput}
+                className={inputSurface}
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 disabled={!editName || saving}
@@ -342,7 +342,7 @@ export default function ProfilePage() {
             <button
               onClick={saveProfile}
               disabled={saving || (!editName && !photoFile)}
-              className={`${goldButton} w-full py-2.5 text-sm`}
+              className={`${primaryButton} w-full py-2.5 text-sm`}
             >
               {saving ? "Saving…" : "Save profile"}
             </button>
@@ -351,7 +351,7 @@ export default function ProfilePage() {
 
             <EditableField label="Email" editing={editEmail} onEdit={() => setEditEmail(true)}>
               <input
-                className={glassInput}
+                className={inputSurface}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={!editEmail || saving}
@@ -362,7 +362,7 @@ export default function ProfilePage() {
               <button
                 onClick={saveEmail}
                 disabled={saving}
-                className={`${glassButton} w-full py-2.5 text-sm font-medium`}
+                className={`${subtleButton} w-full py-2.5 text-sm font-medium`}
               >
                 Send verification to update email
               </button>
@@ -375,7 +375,7 @@ export default function ProfilePage() {
             >
               <input
                 type="password"
-                className={glassInput}
+                className={inputSurface}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Enter a new password"
@@ -387,7 +387,7 @@ export default function ProfilePage() {
               <button
                 onClick={savePassword}
                 disabled={saving}
-                className={`${glassButton} w-full py-2.5 text-sm font-medium`}
+                className={`${subtleButton} w-full py-2.5 text-sm font-medium`}
               >
                 Update password
               </button>
@@ -397,11 +397,11 @@ export default function ProfilePage() {
       </div>
 
       {/* Academic settings */}
-      <div className={`${glassCard} p-6`}>
+      <div className={`${cardSurface} p-6`}>
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-white">Academic Profile</h2>
-            <p className="text-sm text-zinc-500">
+            <h2 className={headingSm}>Academic Profile</h2>
+            <p className="text-sm text-ash">
               Used for degree audits, prerequisites, and recommendations.
             </p>
           </div>
@@ -409,7 +409,7 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={() => setEditSettings(true)}
-              className={`${glassButton} px-4 py-2 text-sm font-medium`}
+              className={`${subtleButton} px-4 py-2 text-sm font-medium`}
             >
               Edit
             </button>
@@ -469,10 +469,10 @@ export default function ProfilePage() {
                     type="button"
                     disabled={saving}
                     onClick={() => setDraft((p) => ({ ...p, coop: opt }))}
-                    className={`rounded-lg border py-2.5 text-sm font-medium transition ${
+                    className={`rounded-[var(--radius-input)] border py-2.5 text-sm font-medium transition ${
                       draft.coop === opt
-                        ? "border-yellow-500/60 bg-yellow-500/10 text-yellow-400"
-                        : "border-white/[0.08] bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08]"
+                        ? "border-gold/60 bg-gold/10 text-gold"
+                        : "border-white/[0.08] bg-white/[0.04] text-mist hover:bg-white/[0.08]"
                     }`}
                   >
                     {opt === "yes" ? "Co-op" : "Regular"}
@@ -505,7 +505,7 @@ export default function ProfilePage() {
                 type="button"
                 onClick={cancelSettings}
                 disabled={saving}
-                className={`${glassButton} px-5 py-2.5 text-sm font-medium`}
+                className={`${subtleButton} px-5 py-2.5 text-sm font-medium`}
               >
                 Cancel
               </button>
@@ -513,7 +513,7 @@ export default function ProfilePage() {
                 type="button"
                 onClick={saveSettings}
                 disabled={saving}
-                className={`${goldButton} flex-1 py-2.5 text-sm`}
+                className={`${primaryButton} flex-1 py-2.5 text-sm`}
               >
                 {saving ? "Saving…" : "Save settings"}
               </button>

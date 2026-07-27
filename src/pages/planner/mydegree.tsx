@@ -10,7 +10,7 @@ import {
   isMathCourse,
   type ReqGroup,
 } from "../../lib/requirements"
-import { glassCard } from "../../lib/ui"
+import { cardSurface } from "../../lib/ui"
 
 function ProgressBar({ value, max, label }: { value: number; max: number; label: string }) {
   const pct = Math.min(100, Math.round((value / max) * 100))
@@ -24,7 +24,7 @@ function ProgressBar({ value, max, label }: { value: number; max: number; label:
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-yellow-500 to-yellow-300 transition-all duration-700"
+          className="h-full rounded-full bg-gold transition-all duration-700"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -35,7 +35,7 @@ function ProgressBar({ value, max, label }: { value: number; max: number; label:
 function GroupCard({ group, have }: { group: ReqGroup; have: Set<string> }) {
   if (group.kind === "choose") {
     return (
-      <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+      <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-4 py-3">
         <p className="text-sm text-zinc-300">{group.label}</p>
         <p className="mt-0.5 text-xs text-zinc-600">Tracked manually</p>
       </div>
@@ -48,7 +48,7 @@ function GroupCard({ group, have }: { group: ReqGroup; have: Set<string> }) {
       : group.courses.some((c) => have.has(c.code))
 
   return (
-    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-4 py-3">
       <div className="mb-2 flex items-center justify-between">
         <p className="text-sm font-medium text-zinc-300">{group.label}</p>
         <span
@@ -114,7 +114,7 @@ export default function MyDegree() {
       </div>
 
       {!req ? (
-        <div className={`${glassCard} p-8 text-center`}>
+        <div className={`${cardSurface} p-8 text-center`}>
           <p className="text-sm text-zinc-400">
             Structured requirements for{" "}
             <span className="text-white">{meta?.program || "your program"}</span> haven't
@@ -127,7 +127,7 @@ export default function MyDegree() {
       ) : (
         <>
           {/* Graduation progress */}
-          <div className={`${glassCard} space-y-4 p-5`}>
+          <div className={`${cardSurface} space-y-4 p-5`}>
             <h2 className="text-sm font-semibold text-white">Graduation Requirements</h2>
             <ProgressBar value={mathUnits} max={req.mathUnits} label="Math units" />
             <ProgressBar value={nonMathUnits} max={req.nonMathUnits} label="Non-math units" />
@@ -155,7 +155,7 @@ export default function MyDegree() {
 
           {/* Systems of study + averages */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className={`${glassCard} p-5`}>
+            <div className={`${cardSurface} p-5`}>
               <h2 className="mb-2 text-sm font-semibold text-white">Systems of Study</h2>
               <ul className="space-y-1 text-sm text-zinc-400">
                 {req.systemsOfStudy.map((s) => (
@@ -163,7 +163,7 @@ export default function MyDegree() {
                 ))}
               </ul>
             </div>
-            <div className={`${glassCard} p-5`}>
+            <div className={`${cardSurface} p-5`}>
               <h2 className="mb-2 text-sm font-semibold text-white">Minimum Averages</h2>
               <ul className="space-y-1 text-sm text-zinc-400">
                 {req.minAverages.map((a, i) => (
@@ -177,7 +177,7 @@ export default function MyDegree() {
           </div>
 
           {/* Required courses */}
-          <div className={`${glassCard} p-5`}>
+          <div className={`${cardSurface} p-5`}>
             <h2 className="mb-3 text-sm font-semibold text-white">Required Courses</h2>
             <div className="space-y-3">
               {req.groups.map((g, i) => (
@@ -189,7 +189,7 @@ export default function MyDegree() {
       )}
 
       {/* Degree-level requirements (always shown) */}
-      <div className={`${glassCard} p-5`}>
+      <div className={`${cardSurface} p-5`}>
         <h2 className="mb-3 text-sm font-semibold text-white">
           Bachelor of Mathematics — Degree-Level Requirements
         </h2>

@@ -14,7 +14,7 @@ import {
   type PrereqStatus,
 } from "../../lib/requirements"
 import { usePrereqIndex } from "../../lib/usePrereq"
-import { glassCard } from "../../lib/ui"
+import { cardSurface } from "../../lib/ui"
 import RequirementsAside from "./RequirementsAside"
 
 const STATUS_DOT: Record<PrereqStatus, string> = {
@@ -116,7 +116,7 @@ export default function PlannerTerms() {
           e.preventDefault()
           drop(slot.label)
         }}
-        className={`${glassCard} p-5 transition ${
+        className={`${cardSurface} p-4 transition-shadow ${
           isTarget && drag?.from !== slot.label ? "border-yellow-500/30" : ""
         }`}
       >
@@ -225,7 +225,7 @@ export default function PlannerTerms() {
                       const prevTerm = adjacentUnlockedTerm(slot.label, -1)
                       const nextTerm = adjacentUnlockedTerm(slot.label, 1)
                       return (
-                        <div role="menu" className="glass-menu absolute right-6 top-8 z-40 w-40 overflow-hidden rounded-lg">
+                        <div role="menu" className="glass-pop absolute right-6 top-8 z-40 w-40 overflow-hidden rounded-lg">
                           <button
                             role="menuitem"
                             onClick={() => { setMenuKey(null); open(crs.code) }}
@@ -292,7 +292,7 @@ export default function PlannerTerms() {
     if (!hasContent) return null
 
     return (
-      <div key={slot.id} className={`${glassCard} border-sky-500/20 p-5`}>
+      <div key={slot.id} className={`${cardSurface} border-sky-500/20 p-4`}>
         <div className="mb-1 flex items-center justify-between">
           <span className="font-mono text-sm font-bold text-sky-300">{slot.label}</span>
           <span className="text-[10px] uppercase tracking-wide text-zinc-600">Work term</span>
@@ -327,11 +327,13 @@ export default function PlannerTerms() {
     )
   }
 
+  // Same condition RequirementsAside uses internally (`!req` -> null) so the
+  // grid track never reserves 320px for an aside that renders nothing.
   const hasProgram = !!getProgramRequirements(meta?.program)
   const showAside = hasProgram && asideOpen
 
   return (
-    <div className={`grid grid-cols-1 gap-6 ${showAside ? "xl:grid-cols-[1fr_320px]" : ""}`}>
+    <div className={`grid grid-cols-1 gap-6 ${showAside ? "lg:grid-cols-[1fr_320px]" : ""}`}>
       {/* Click-away backdrop for the course menu */}
       {menuKey && <div className="fixed inset-0 z-30" onClick={() => setMenuKey(null)} />}
       <div className="space-y-5">
@@ -357,7 +359,7 @@ export default function PlannerTerms() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {slots.map((slot) =>
             slot.type === "study"
               ? renderStudy(slot)
@@ -368,7 +370,11 @@ export default function PlannerTerms() {
         </div>
       </div>
 
-      {showAside && <RequirementsAside onCollapse={() => setAsideOpen(false)} />}
+      {showAside && (
+        <div className="lg:sticky lg:top-20 lg:self-start">
+          <RequirementsAside onCollapse={() => setAsideOpen(false)} />
+        </div>
+      )}
     </div>
   )
 }

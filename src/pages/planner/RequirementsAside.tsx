@@ -9,7 +9,7 @@ import {
   getProgramRequirements,
   isMathCourse,
 } from "../../lib/requirements"
-import { glassCard } from "../../lib/ui"
+import { cardSurface } from "../../lib/ui"
 
 function MiniBar({ value, max, label }: { value: number; max: number; label: string }) {
   const pct = Math.min(100, Math.round((value / max) * 100))
@@ -23,7 +23,7 @@ function MiniBar({ value, max, label }: { value: number; max: number; label: str
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-yellow-500 to-yellow-300"
+          className="h-full rounded-full bg-gold"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -64,7 +64,7 @@ export default function RequirementsAside({ onCollapse }: { onCollapse?: () => v
 
   return (
     <aside className="space-y-4">
-      <div className={`${glassCard} space-y-3 p-4`}>
+      <div className={`${cardSurface} space-y-3 p-4`}>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-white">My Degree</h2>
           <div className="flex items-center gap-2">
@@ -88,7 +88,7 @@ export default function RequirementsAside({ onCollapse }: { onCollapse?: () => v
         <MiniBar value={math + nonMath} max={req.totalUnits} label="Total units" />
       </div>
 
-      <div className={`${glassCard} p-4`}>
+      <div className={`${cardSurface} p-4`}>
         <h3 className="mb-2 text-xs font-semibold uppercase tracking-widest text-zinc-500">
           Required
         </h3>

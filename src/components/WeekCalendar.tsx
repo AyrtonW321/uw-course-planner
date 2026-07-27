@@ -5,6 +5,8 @@ import type { TimetableEntry } from "../lib/timetable"
 const START = 8 * 60 // 8:00am
 const END = 21 * 60 // 9:00pm
 
+// Base hexes match --color-cal-1..6 in src/index.css (facc15/60a5fa/34d399/f472b6/a78bfa/fb923c) —
+// kept as literal rgba() here since inline styles can't reference the theme's hex tokens as rgb triplets.
 const PALETTE = [
   { bg: "rgba(250,204,21,0.14)", border: "rgba(250,204,21,0.55)", text: "#fde68a" },
   { bg: "rgba(96,165,250,0.14)", border: "rgba(96,165,250,0.55)", text: "#bfdbfe" },
@@ -81,11 +83,12 @@ export default function WeekCalendar({
   const labelSize = compact ? "text-[9px]" : "text-[11px]"
 
   return (
-    <div>
+    <div className="overflow-x-auto">
+      <div className="min-w-[560px]">
       <div className="mb-2 grid grid-cols-[40px_repeat(5,1fr)]">
         <div />
         {DAY_LABELS.map((d) => (
-          <div key={d} className="px-1 text-center text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+          <div key={d} className="px-1 text-center text-[10px] font-medium uppercase tracking-wide text-fog">
             {d}
           </div>
         ))}
@@ -96,7 +99,7 @@ export default function WeekCalendar({
           {HOURS.map((h) => (
             <div
               key={h}
-              className="absolute right-1 -translate-y-1/2 text-[9px] text-zinc-600"
+              className="absolute right-1 -translate-y-1/2 text-[9px] text-ash"
               style={{ top: (h * 60 - START) * pxPerMin }}
             >
               {formatTime(h * 60)}
@@ -138,7 +141,7 @@ export default function WeekCalendar({
                     }
                     className={`absolute left-0.5 right-0.5 overflow-hidden rounded-md border px-1 py-0.5 backdrop-blur-sm ${
                       onEventClick ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70" : ""
-                    } ${e.conflict ? "ring-2 ring-red-500/70" : selected ? "ring-2 ring-yellow-400/80" : ""}`}
+                    } ${e.conflict ? "ring-2 ring-red-500/70" : selected ? "ring-2 ring-gold/80" : ""}`}
                     style={{
                       top,
                       height: h,
@@ -147,11 +150,11 @@ export default function WeekCalendar({
                     }}
                     title={`${e.code} · ${e.location}`}
                   >
-                    <p className={`truncate font-bold ${labelSize}`} style={{ color: e.conflict ? "#fecaca" : e.color.text }}>
+                    <p className={`truncate font-medium ${labelSize}`} style={{ color: e.conflict ? "#fecaca" : e.color.text }}>
                       {e.code}
                     </p>
                     {!compact && (
-                      <p className="truncate text-[9px] text-zinc-400">
+                      <p className="truncate text-[9px] text-fog">
                         {e.type} · {e.location}
                       </p>
                     )}
@@ -160,6 +163,7 @@ export default function WeekCalendar({
               })}
           </div>
         ))}
+      </div>
       </div>
     </div>
   )

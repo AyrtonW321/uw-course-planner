@@ -1,7 +1,7 @@
 import { useState } from "react"
 import CourseSearch from "../../components/CourseSearch"
 import { COOP_SEQUENCES, useCoopPlan } from "../../lib/coop"
-import { glassCard, glassInput, glassButton } from "../../lib/ui"
+import { cardSurface, inputSurface, subtleButton } from "../../lib/ui"
 
 export default function CoopPage() {
   const {
@@ -46,7 +46,7 @@ export default function CoopPage() {
       </div>
 
       {/* Sequence selector */}
-      <div className={`${glassCard} p-5`}>
+      <div className={`${cardSurface} p-5`}>
         <h2 className="mb-3 text-sm font-semibold text-white">Co-op Sequence</h2>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {COOP_SEQUENCES.map((s) => (
@@ -70,10 +70,10 @@ export default function CoopPage() {
       </div>
 
       {/* Manual schedule editor (drag to reorder) */}
-      <div className={`${glassCard} p-5`}>
+      <div className={`${cardSurface} p-5`}>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-white">Your Schedule</h2>
-          <button onClick={addWorkTerm} className={`${glassButton} px-3 py-1.5 text-xs font-medium`}>
+          <button onClick={addWorkTerm} className={`${subtleButton} px-3 py-1.5 text-xs font-medium`}>
             + Add work term
           </button>
         </div>
@@ -99,7 +99,7 @@ export default function CoopPage() {
                 setDragIndex(null)
               }}
               onDragEnd={() => setDragIndex(null)}
-              className={`group flex cursor-grab items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium active:cursor-grabbing ${slotStyle(
+              className={`group flex cursor-grab items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium active:cursor-grabbing ${slotStyle(
                 slot.type
               )} ${dragIndex === i ? "opacity-50" : ""}`}
             >
@@ -139,7 +139,7 @@ export default function CoopPage() {
 
       {/* Work terms */}
       {workSlots.length === 0 ? (
-        <div className={`${glassCard} p-6 text-sm text-zinc-500`}>
+        <div className={`${cardSurface} p-6 text-sm text-zinc-500`}>
           This schedule has no work terms. Use “Add work term” above.
         </div>
       ) : (
@@ -149,7 +149,7 @@ export default function CoopPage() {
             const record = plan.work[slot.id] ?? { status: "unemployed" as const }
             const online = plan.onlineCourses[slot.id] ?? []
             return (
-              <div key={slot.id} className={`${glassCard} p-5`}>
+              <div key={slot.id} className={`${cardSurface} p-5`}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="font-mono text-sm font-bold text-sky-300">{slot.label}</span>
                   <div className="flex gap-2">
@@ -157,7 +157,7 @@ export default function CoopPage() {
                       <button
                         key={st}
                         onClick={() => setWork(slot.id, { ...record, status: st })}
-                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium capitalize transition ${
+                        className={`rounded-full border px-3 py-1.5 text-xs font-medium capitalize transition ${
                           record.status === st
                             ? "border-yellow-500/60 bg-yellow-500/10 text-yellow-400"
                             : "border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06]"
@@ -175,7 +175,7 @@ export default function CoopPage() {
                     value={record.employer ?? ""}
                     onChange={(e) => setWork(slot.id, { ...record, employer: e.target.value })}
                     placeholder="Employer (e.g. Shopify)"
-                    className={`${glassInput} mt-3`}
+                    className={`${inputSurface} mt-3`}
                   />
                 )}
 

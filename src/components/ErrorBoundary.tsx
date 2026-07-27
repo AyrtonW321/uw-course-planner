@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react"
+import { cardSurface, primaryButton } from "../lib/ui"
 
 type Props = { children: ReactNode }
 type State = { error: Error | null }
@@ -23,15 +24,15 @@ export default class ErrorBoundary extends Component<Props, State> {
     if (!this.state.error) return this.props.children
 
     return (
-      <div className="app-bg flex min-h-screen items-center justify-center px-4 text-center">
-        <div className="glass max-w-md rounded-2xl p-8">
-          <h1 className="text-xl font-bold text-white">Something went wrong</h1>
-          <p className="mt-2 text-sm text-zinc-400">
+      <div className="flex min-h-screen items-center justify-center bg-void px-4 text-center">
+        <div className={`${cardSurface} max-w-md p-8`}>
+          <h1 className="text-xl font-normal text-bone">Something went wrong</h1>
+          <p className="mt-2 text-sm text-ash">
             An unexpected error occurred. Try reloading the page.
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="btn-gold mt-6 rounded-xl px-5 py-2.5 text-sm font-bold text-black"
+            className={`${primaryButton} mt-6 px-5 py-2.5 text-sm`}
           >
             Reload
           </button>

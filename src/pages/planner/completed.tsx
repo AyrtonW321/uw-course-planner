@@ -5,7 +5,7 @@ import { completedTerms } from "../../lib/degreePlan"
 import { useDegreePlan } from "../../lib/degreePlan"
 import { useProfileMeta } from "../../lib/profile"
 import { isFailing, parseTranscript, useCompleted, type CompletedCourse } from "../../lib/completed"
-import { glassCard, glassInput, goldButton, glassButton } from "../../lib/ui"
+import { cardSurface, inputSurface, primaryButton, subtleButton } from "../../lib/ui"
 
 function GradeBadge({ grade }: { grade: number | null | undefined }) {
   if (grade === undefined)
@@ -83,14 +83,14 @@ export default function CompletedPage() {
             Enter grades for terms you've finished. Below 50% is a fail and must be retaken.
           </p>
         </div>
-        <button onClick={() => setShowImport((v) => !v)} className={`${glassButton} px-4 py-2 text-sm font-medium`}>
+        <button onClick={() => setShowImport((v) => !v)} className={`${subtleButton} px-4 py-2 text-sm font-medium`}>
           {showImport ? "Close import" : "Import transcript"}
         </button>
       </div>
 
       {/* Transcript import */}
       {showImport && (
-        <div className={`${glassCard} space-y-3 p-5`}>
+        <div className={`${cardSurface} space-y-3 p-5`}>
           <p className="text-sm text-zinc-400">
             Paste your unofficial transcript (from Quest). We'll pull out course codes and grades.
           </p>
@@ -100,10 +100,10 @@ export default function CompletedPage() {
             onChange={(e) => setRaw(e.target.value)}
             rows={5}
             placeholder="MATH 135  Algebra for Honours Mathematics  0.50  0.50  92 …"
-            className={`${glassInput} font-mono`}
+            className={`${inputSurface} font-mono`}
           />
           <div className="flex gap-2">
-            <button onClick={() => setParsed(parseTranscript(raw))} disabled={!raw.trim()} className={`${glassButton} px-4 py-2 text-sm font-medium`}>
+            <button onClick={() => setParsed(parseTranscript(raw))} disabled={!raw.trim()} className={`${subtleButton} px-4 py-2 text-sm font-medium`}>
               Parse
             </button>
             {parsed && parsed.length > 0 && (
@@ -114,14 +114,14 @@ export default function CompletedPage() {
                   setRaw("")
                   setShowImport(false)
                 }}
-                className={`${goldButton} px-4 py-2 text-sm`}
+                className={`${primaryButton} px-4 py-2 text-sm`}
               >
                 Import {parsed.length} course{parsed.length === 1 ? "" : "s"}
               </button>
             )}
           </div>
           {parsed && (
-            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+            <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3">
               {parsed.length === 0 ? (
                 <p className="text-sm text-zinc-500">No courses detected.</p>
               ) : (
@@ -141,13 +141,13 @@ export default function CompletedPage() {
 
       {/* Term-by-term grade entry */}
       {!meta?.currentTerm ? (
-        <div className={`${glassCard} p-6 text-sm text-zinc-400`}>
+        <div className={`${cardSurface} p-6 text-sm text-zinc-400`}>
           Set your current term in{" "}
           <Link to="/app/profile" className="text-yellow-400 hover:text-yellow-300">your profile</Link>{" "}
           so we know which terms you've completed.
         </div>
       ) : done.length === 0 ? (
-        <div className={`${glassCard} p-6 text-sm text-zinc-500`}>
+        <div className={`${cardSurface} p-6 text-sm text-zinc-500`}>
           You're in your first term — no completed terms yet.
         </div>
       ) : (
@@ -155,7 +155,7 @@ export default function CompletedPage() {
           {done.map((term) => {
             const courses = plan[term] ?? []
             return (
-              <div key={term} className={`${glassCard} p-5`}>
+              <div key={term} className={`${cardSurface} p-5`}>
                 <h2 className="mb-3 font-mono text-sm font-bold text-white">{term}</h2>
                 {courses.length === 0 ? (
                   <p className="text-xs text-zinc-600">No courses planned for this term.</p>
@@ -178,7 +178,7 @@ export default function CompletedPage() {
       )}
 
       {/* Courses not in your plan (e.g. transcript imports) */}
-      <div className={`${glassCard} p-5`}>
+      <div className={`${cardSurface} p-5`}>
         <h2 className="mb-1 text-sm font-semibold text-white">Other completed courses</h2>
         <p className="mb-3 text-xs text-zinc-500">Courses you've finished that aren't in a completed term of your plan.</p>
         <div className="mb-3">
@@ -202,6 +202,7 @@ export default function CompletedPage() {
                   placeholder="—"
                   className={gradeCls}
                   title="Final grade (%)"
+                  aria-label={`Final grade for ${c.code} (%)`}
                 />
                 <button onClick={() => remove(c.code)} className="flex-shrink-0 text-xs text-zinc-600 transition hover:text-red-400" aria-label={`Remove ${c.code}`}>✕</button>
               </li>

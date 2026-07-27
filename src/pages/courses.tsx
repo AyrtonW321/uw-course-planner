@@ -11,7 +11,7 @@ import type { Course } from "../lib/courses"
 import { useTimetable } from "../lib/timetable"
 import { useCourseRatings } from "../lib/uwflow"
 import { RatingBadges } from "../components/CourseRating"
-import { glassCard, glassInput } from "../lib/ui"
+import { cardSurface, headingSm, inputSurface } from "../lib/ui"
 
 export default function CoursesPage() {
   const [params, setParams] = useSearchParams()
@@ -94,8 +94,8 @@ export default function CoursesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Courses</h1>
-          <p className="mt-1 text-sm text-zinc-500">
+          <h1 className={headingSm}>Courses</h1>
+          <p className="mt-1 text-sm text-fog">
             {term ? term.name : "Loading term…"}
             {!USE_API && " · sample data (no API key)"}
           </p>
@@ -115,7 +115,7 @@ export default function CoursesPage() {
           }}
         />
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold uppercase tracking-widest text-zinc-400">
+          <label className="block text-xs font-medium uppercase tracking-widest text-fog">
             Filter
           </label>
           <input
@@ -123,7 +123,7 @@ export default function CoursesPage() {
             value={filter}
             onChange={(e) => onFilter(e.target.value)}
             placeholder="Filter by number or title (e.g. 136, Algorithm)"
-            className={glassInput}
+            className={inputSurface}
           />
         </div>
       </div>
@@ -135,48 +135,47 @@ export default function CoursesPage() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-16 text-zinc-400">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-700 border-t-yellow-400" />
+        <div className="flex justify-center py-16 text-fog">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/10 border-t-gold" />
         </div>
       ) : (
         <>
-          <p className="text-xs text-zinc-600">
+          <p className="text-xs text-ash">
             {results.length} course{results.length === 1 ? "" : "s"}
           </p>
-          <div className="max-h-[34rem] overflow-y-auto rounded-2xl border border-white/[0.06] bg-white/[0.01] p-3">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {results.map((c) => (
               <Link
                 key={c.code}
                 to={`/app/courses/${encodeURIComponent(c.code)}`}
-                className={`${glassCard} group block p-4 transition hover:border-yellow-500/30 hover:bg-white/[0.06]`}
+                className={`${cardSurface} group block p-4 transition hover:border-gold/30 hover:bg-white/[0.06]`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <span className="font-mono text-sm font-bold text-yellow-400">
+                    <span className="font-mono text-sm font-medium text-gold">
                       {c.code}
                     </span>
-                    <p className="mt-1 text-sm font-medium text-white">{c.name}</p>
+                    <p className="mt-1 text-sm font-medium text-bone">{c.name}</p>
                   </div>
                   {addedCodes.has(c.code) && (
-                    <span className="flex-shrink-0 rounded-full border border-green-500/30 bg-green-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-green-400">
+                    <span className="flex-shrink-0 rounded-full border border-green-500/30 bg-green-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-green-400">
                       Added
                     </span>
                   )}
                 </div>
                 {c.description && (
-                  <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-zinc-500">
+                  <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-fog">
                     {c.description}
                   </p>
                 )}
                 <div className="mt-2">
                   <RatingBadges rating={ratings.get(c.code) ?? null} />
                 </div>
-                <div className="mt-3 flex items-center gap-3 text-xs text-zinc-600">
+                <div className="mt-3 flex items-center gap-3 text-xs text-ash">
                   {c.requirements && (
                     <span className="line-clamp-1">{c.requirements}</span>
                   )}
-                  <span className="ml-auto flex-shrink-0 text-yellow-400/70 transition group-hover:text-yellow-400">
+                  <span className="ml-auto flex-shrink-0 text-gold/70 transition group-hover:text-gold">
                     View →
                   </span>
                 </div>
@@ -184,11 +183,10 @@ export default function CoursesPage() {
             ))}
 
             {results.length === 0 && (
-              <div className={`${glassCard} p-8 text-center text-sm text-zinc-500 sm:col-span-2 lg:col-span-3`}>
+              <div className={`${cardSurface} p-8 text-center text-sm text-fog sm:col-span-2 lg:col-span-3 xl:col-span-4 2xl:col-span-5`}>
                 No courses found.
               </div>
             )}
-          </div>
           </div>
         </>
       )}

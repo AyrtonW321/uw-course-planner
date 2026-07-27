@@ -8,6 +8,7 @@ import { auth } from "../../lib/firebase"
 import { errorMessage } from "../../lib/errors"
 import { Link, useNavigate } from "react-router-dom"
 import ConstellationCanvas from "../../components/ConstellationCanvas"
+import { cardSurface, eyebrow, headingSm, inputSurface, primaryButton, subtleButton } from "../../lib/ui"
 
 type RuleState = "neutral" | "valid" | "invalid"
 type Rule = { id: string; label: string; state: RuleState }
@@ -102,156 +103,136 @@ export default function Register() {
   }
 
   const ruleClass = (state: RuleState) => {
-    if (state === "valid") return "text-yellow-400"
+    if (state === "valid") return "text-gold"
     if (state === "invalid") return "text-red-400"
-    return "text-zinc-600"
+    return "text-ash"
   }
 
   const dotClass = (state: RuleState) => {
-    if (state === "valid") return "bg-yellow-400"
+    if (state === "valid") return "bg-gold"
     if (state === "invalid") return "bg-red-400"
-    return "bg-zinc-700"
+    return "bg-white/[0.15]"
   }
 
   // Strength bar
   const strength = rules.filter((r) => r.state === "valid").length
   const strengthLabel = ["", "Weak", "Weak", "Fair", "Good", "Strong"][strength] ?? ""
-  const strengthColor = strength <= 2 ? "bg-red-500" : strength <= 3 ? "bg-yellow-500" : strength === 4 ? "bg-yellow-400" : "bg-green-400"
+  const strengthColor = strength <= 2 ? "bg-red-500" : strength <= 3 ? "bg-yellow-500" : strength === 4 ? "bg-gold" : "bg-green-400"
 
   return (
-    <div className="app-bg relative min-h-screen flex items-center justify-center px-4 py-8 overflow-hidden">
-      <ConstellationCanvas />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-void px-4 py-12">
+      <ConstellationCanvas opacity={0.6} />
 
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="h-[600px] w-[600px] rounded-full bg-yellow-500/5 blur-[100px]" />
-      </div>
+      <div className={`${cardSurface} relative z-10 w-full max-w-sm p-8`}>
+        <p className={eyebrow}>UW Course Planner</p>
+        <h1 className={`${headingSm} mt-3`}>Create your account</h1>
+        <p className="mt-2 text-sm text-ash">Set up your degree plan in a few minutes.</p>
 
-      <div className="relative z-10 w-full max-w-md">
-        {/* Brand */}
-        <div className="mb-8 text-center">
-          <div className="mb-4 flex justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 font-bold text-xl shadow-lg shadow-yellow-500/10">
-              W
-            </div>
+        {error && (
+          <div role="alert" aria-live="polite" className="mt-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {error}
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">UW Course Planner</h1>
-          <p className="mt-1 text-sm text-zinc-500">Create your account to get started</p>
-        </div>
+        )}
 
-        {/* Card */}
-        <div className="glass rounded-2xl px-8 py-8">
-          {error && (
-            <div role="alert" aria-live="polite" className="mb-5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-              {error}
-            </div>
-          )}
+        <form onSubmit={handleRegister} className="mt-8 space-y-5" autoComplete="off">
+          <div className="space-y-1.5">
+            <label className={eyebrow}>Email</label>
+            <input
+              type="email"
+              placeholder="you@uwaterloo.ca"
+              className={inputSurface}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+            />
+          </div>
 
-          <form onSubmit={handleRegister} className="space-y-5" autoComplete="off">
-            {/* Email */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-widest text-zinc-400">
-                Email
-              </label>
+          <div className="space-y-1.5">
+            <label className={eyebrow}>Password</label>
+            <div className="relative">
               <input
-                type="email"
-                placeholder="you@uwaterloo.ca"
-                className="w-full rounded-lg glass-input px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type={showPassword ? "text" : "password"}
+                placeholder="Create a password"
+                className={`${inputSurface} pr-10`}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
-                autoComplete="email"
+                autoComplete="new-password"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ash transition hover:text-gold"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                <EyeIcon open={showPassword} />
+              </button>
             </div>
 
-            {/* Password */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-widest text-zinc-400">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Create a password"
-                  className="w-full rounded-lg glass-input px-4 py-2.5 pr-11 text-sm text-white placeholder-zinc-600 outline-none"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="new-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 transition hover:text-yellow-400"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  <EyeIcon open={showPassword} />
-                </button>
-              </div>
-
-              {/* Strength bar */}
-              {password.length > 0 && (
-                <div className="space-y-1 pt-1">
-                  <div className="flex h-1 gap-1">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <div
-                        key={i}
-                        className={`h-full flex-1 rounded-full transition-all duration-300 ${i <= strength ? strengthColor : "bg-white/[0.08]"}`}
-                      />
-                    ))}
-                  </div>
-                  {strengthLabel && (
-                    <p className="text-right text-xs text-zinc-500">
-                      Strength: <span className="font-medium text-zinc-300">{strengthLabel}</span>
-                    </p>
-                  )}
+            {/* Strength bar */}
+            {password.length > 0 && (
+              <div className="space-y-1 pt-1">
+                <div className="flex h-1 gap-1">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div
+                      key={i}
+                      className={`h-full flex-1 rounded-full transition-all duration-300 ${i <= strength ? strengthColor : "bg-white/[0.08]"}`}
+                    />
+                  ))}
                 </div>
-              )}
+                {strengthLabel && (
+                  <p className="text-right text-xs text-ash">
+                    Strength: <span className="font-medium text-fog">{strengthLabel}</span>
+                  </p>
+                )}
+              </div>
+            )}
 
-              {/* Rules */}
-              <ul aria-live="polite" className="mt-2 space-y-1.5">
-                {rules.map((r) => (
-                  <li key={r.id} className={`flex items-center gap-2 text-xs transition-colors ${ruleClass(r.state)}`}>
-                    <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full transition-colors ${dotClass(r.state)}`} />
-                    <span className={r.state === "invalid" ? "line-through opacity-50" : ""}>{r.label}</span>
-                    {r.state === "valid" && (
-                      <svg className="ml-auto h-3 w-3" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z" />
-                      </svg>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <button
-              type="submit"
-              disabled={!canSubmit}
-              className="w-full rounded-lg bg-yellow-400 py-2.5 text-sm font-bold text-black shadow-lg shadow-yellow-400/10 transition hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              {loading ? "Creating account…" : "Create Account"}
-            </button>
-          </form>
-
-          <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-white/[0.06]" />
-            <span className="text-xs text-zinc-600">or</span>
-            <div className="h-px flex-1 bg-white/[0.06]" />
+            {/* Rules */}
+            <ul aria-live="polite" className="mt-2 space-y-1.5">
+              {rules.map((r) => (
+                <li key={r.id} className={`flex items-center gap-2 text-xs transition-colors ${ruleClass(r.state)}`}>
+                  <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full transition-colors ${dotClass(r.state)}`} />
+                  <span className={r.state === "invalid" ? "line-through opacity-50" : ""}>{r.label}</span>
+                  {r.state === "valid" && (
+                    <svg className="ml-auto h-3 w-3" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z" />
+                    </svg>
+                  )}
+                </li>
+              ))}
+            </ul>
           </div>
 
           <button
-            onClick={handleGoogle}
-            disabled={loading}
-            type="button"
-            className="flex w-full items-center justify-center gap-3 rounded-lg border border-white/[0.08] bg-white/[0.03] py-2.5 text-sm font-medium text-zinc-300 transition hover:border-yellow-500/30 hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed"
+            type="submit"
+            disabled={!canSubmit}
+            className={`${primaryButton} w-full py-2.5 text-sm`}
           >
-            <GoogleIcon />
-            Continue with Google
+            {loading ? "Creating account…" : "Create account"}
           </button>
+        </form>
+
+        <div className="my-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-white/[0.08]" />
+          <span className="text-xs text-ash">or</span>
+          <div className="h-px flex-1 bg-white/[0.08]" />
         </div>
 
-        <p className="mt-6 text-center text-sm text-zinc-600">
+        <button
+          onClick={handleGoogle}
+          disabled={loading}
+          type="button"
+          className={`${subtleButton} flex w-full items-center justify-center gap-3 py-2.5 text-sm`}
+        >
+          <GoogleIcon />
+          Continue with Google
+        </button>
+
+        <p className="mt-8 text-center text-sm text-ash">
           Already have an account?{" "}
-          <Link to="/login" className="font-medium text-yellow-400 transition hover:text-yellow-300">
+          <Link to="/login" className="font-medium text-gold transition hover:text-gold-dim">
             Login here
           </Link>
         </p>

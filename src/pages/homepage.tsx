@@ -1,49 +1,45 @@
 import { Link } from "react-router-dom"
 import ConstellationCanvas from "../components/ConstellationCanvas"
+import { display, eyebrow, bodyLg, caption, primaryButton } from "../lib/ui"
+
+const FEATURES = [
+  { label: "Requirements", detail: "Live degree audit against your program" },
+  { label: "Prerequisites", detail: "See what unlocks what, every term" },
+  { label: "Timetable", detail: "Build and export your real schedule" },
+]
 
 export default function HomePage() {
   return (
-    <div className="app-bg relative min-h-screen overflow-hidden text-white flex items-center justify-center px-4">
-      <ConstellationCanvas />
+    <div className="relative flex min-h-screen items-center overflow-hidden bg-void px-6 sm:px-12 lg:px-24">
+      <ConstellationCanvas opacity={1} />
 
-      {/* Glow */}
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="h-[700px] w-[700px] rounded-full bg-yellow-500/5 blur-[120px]" />
-      </div>
-
-      <div className="relative z-10 max-w-2xl text-center">
-        {/* Logo */}
-        <div className="mb-6 flex justify-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 font-bold text-2xl shadow-xl shadow-yellow-500/10">
-            W
-          </div>
-        </div>
-
-        <h1 className="text-5xl font-bold tracking-tight">
-          UW Course Planner
-        </h1>
-        <p className="mt-4 text-lg text-zinc-500 leading-relaxed">
-          Plan your terms, track degree requirements,<br className="hidden sm:block" /> and build your perfect timetable.
+      <div className="relative z-10 max-w-2xl py-24">
+        <p className={eyebrow}>University of Waterloo</p>
+        <h1 className={`${display} mt-4`}>Plan your degree with clarity.</h1>
+        <p className={`${bodyLg} mt-6 max-w-md`}>
+          Track requirements, build your timetable, and see exactly what unlocks what — every term,
+          mapped against the real course catalog.
         </p>
 
-        <div className="mt-10 flex items-center justify-center gap-4">
-          <Link
-            to="/login"
-            className="rounded-xl bg-yellow-400 px-7 py-3 font-bold text-black shadow-lg shadow-yellow-400/10 transition hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-black"
-          >
-            Sign In
+        <div className="glass mt-10 flex flex-wrap items-center gap-6 rounded-2xl p-6">
+          <Link to="/login" className={`${primaryButton} px-8 py-3.5 text-sm uppercase tracking-[0.025em]`}>
+            Sign in
           </Link>
-          <Link
-            to="/register"
-            className="rounded-xl border border-white/[0.1] bg-white/[0.03] px-7 py-3 font-semibold text-zinc-300 transition hover:border-yellow-500/30 hover:bg-white/[0.06]"
-          >
-            Create Account
+          <Link to="/register" className="text-sm text-ash transition hover:text-bone">
+            Create an account
           </Link>
         </div>
 
-        <p className="mt-8 text-sm text-zinc-700">
-          Built for University of Waterloo students
-        </p>
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {FEATURES.map((f) => (
+            <div key={f.label} className="glass rounded-2xl p-4">
+              <p className="text-sm font-medium text-bone">{f.label}</p>
+              <p className={`${caption} mt-1`}>{f.detail}</p>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-10 text-caption text-ash">Built for University of Waterloo students</p>
       </div>
     </div>
   )

@@ -14,7 +14,7 @@ import { COOP_SEQUENCES, defaultSequenceId } from "../../lib/coop"
 import { useUserDoc } from "../../lib/userDoc"
 import { ALL_TERM_IDS } from "../../lib/degreePlan"
 import { errorMessage } from "../../lib/errors"
-import { goldButton, glassButton } from "../../lib/ui"
+import { cardSurface, eyebrow, headingSm, primaryButton, subtleButton } from "../../lib/ui"
 
 const FACULTIES = Object.keys(PROGRAMS_BY_FACULTY)
 const TERMS: GradTerm[] = ["Fall", "Winter", "Spring"]
@@ -51,8 +51,8 @@ export default function Onboarding() {
   // Gate: wait for load, bounce out if not signed in or already onboarded.
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-black text-zinc-400">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-700 border-t-yellow-400" />
+      <div className="flex min-h-screen items-center justify-center bg-void text-ash">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/[0.1] border-t-gold" />
       </div>
     )
   }
@@ -68,7 +68,7 @@ export default function Onboarding() {
       subtitle: "Let's set up your academic profile. Takes 30 seconds.",
       valid: true,
       body: (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-5 text-sm leading-relaxed text-zinc-400">
+        <div className="rounded-[var(--radius-input)] border border-white/[0.08] bg-white/[0.03] p-5 text-sm leading-relaxed text-fog">
           We'll use this to track your degree requirements, validate prerequisites,
           and recommend courses. You can change any of it later in Profile Settings.
         </div>
@@ -134,16 +134,16 @@ export default function Onboarding() {
               key={opt}
               type="button"
               onClick={() => setDraft((p) => ({ ...p, coop: opt }))}
-              className={`rounded-xl border px-4 py-6 text-center transition ${
+              className={`rounded-[var(--radius-input)] border px-4 py-6 text-center transition ${
                 draft.coop === opt
-                  ? "border-yellow-500/60 bg-yellow-500/10 text-yellow-400"
-                  : "border-white/[0.08] bg-white/[0.03] text-zinc-300 hover:bg-white/[0.06]"
+                  ? "border-gold/60 bg-gold/10 text-gold"
+                  : "border-white/[0.08] bg-white/[0.03] text-mist hover:bg-white/[0.06]"
               }`}
             >
-              <span className="text-lg font-semibold">
+              <span className="text-lg font-medium">
                 {opt === "yes" ? "Co-op" : "Regular"}
               </span>
-              <span className="mt-1 block text-xs text-zinc-500">
+              <span className="mt-1 block text-xs text-ash">
                 {opt === "yes" ? "Alternating work terms" : "No work terms"}
               </span>
             </button>
@@ -164,20 +164,20 @@ export default function Onboarding() {
                     key={s.id}
                     type="button"
                     onClick={() => setSeqId(s.id)}
-                    className={`w-full rounded-xl border px-4 py-3 text-left transition ${
+                    className={`w-full rounded-[var(--radius-input)] border px-4 py-3 text-left transition ${
                       seqId === s.id
-                        ? "border-yellow-500/60 bg-yellow-500/10"
+                        ? "border-gold/60 bg-gold/10"
                         : "border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06]"
                     }`}
                   >
                     <span
-                      className={`text-sm font-semibold ${
-                        seqId === s.id ? "text-yellow-400" : "text-white"
+                      className={`text-sm font-medium ${
+                        seqId === s.id ? "text-gold" : "text-bone"
                       }`}
                     >
                       {s.label}
                     </span>
-                    <span className="mt-0.5 block text-xs text-zinc-500">{s.description}</span>
+                    <span className="mt-0.5 block text-xs text-ash">{s.description}</span>
                   </button>
                 ))}
               </div>
@@ -240,63 +240,55 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="app-bg relative flex min-h-screen items-center justify-center overflow-hidden px-4">
-      <ConstellationCanvas />
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="h-[600px] w-[600px] rounded-full bg-yellow-500/5 blur-[100px]" />
-      </div>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-void px-4 py-12">
+      <ConstellationCanvas opacity={0.6} />
 
-      <div className="relative z-10 w-full max-w-md">
+      <div className={`${cardSurface} relative z-10 w-full max-w-sm p-8`}>
         {/* Progress */}
-        <div className="mb-6 flex gap-1.5">
+        <div className="mb-8 flex gap-1.5">
           {steps.map((_, i) => (
             <div
               key={i}
               className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                i <= step ? "bg-yellow-400" : "bg-white/[0.08]"
+                i <= step ? "bg-gold" : "bg-white/[0.08]"
               }`}
             />
           ))}
         </div>
 
-        {/* Card */}
-        <div className="glass rounded-2xl px-8 py-8">
-          <p className="text-xs font-semibold uppercase tracking-widest text-yellow-400/80">
-            Step {step + 1} of {total}
-          </p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-white">
-            {current.title}
-          </h1>
-          <p className="mt-1 text-sm text-zinc-500">{current.subtitle}</p>
+        <p className={eyebrow}>
+          Step {step + 1} of {total}
+        </p>
+        <h1 className={`${headingSm} mt-3`}>{current.title}</h1>
+        <p className="mt-2 text-sm text-ash">{current.subtitle}</p>
 
-          <div className="mt-6">{current.body}</div>
+        <div className="mt-8">{current.body}</div>
 
-          {error && (
-            <div role="alert" aria-live="polite" className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-              {error}
-            </div>
-          )}
+        {error && (
+          <div role="alert" aria-live="polite" className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
 
-          <div className="mt-8 flex items-center gap-3">
-            {step > 0 && (
-              <button
-                type="button"
-                onClick={back}
-                disabled={saving}
-                className={`${glassButton} px-5 py-2.5 text-sm font-medium`}
-              >
-                Back
-              </button>
-            )}
+        <div className="mt-8 flex items-center gap-3">
+          {step > 0 && (
             <button
               type="button"
-              onClick={next}
-              disabled={!current.valid || saving}
-              className={`${goldButton} flex-1 py-2.5 text-sm`}
+              onClick={back}
+              disabled={saving}
+              className={`${subtleButton} px-5 py-2.5 text-sm font-medium`}
             >
-              {saving ? "Saving…" : isLast ? "Finish setup" : "Continue"}
+              Back
             </button>
-          </div>
+          )}
+          <button
+            type="button"
+            onClick={next}
+            disabled={!current.valid || saving}
+            className={`${primaryButton} flex-1 py-2.5 text-sm`}
+          >
+            {saving ? "Saving…" : isLast ? "Finish setup" : "Continue"}
+          </button>
         </div>
       </div>
     </div>

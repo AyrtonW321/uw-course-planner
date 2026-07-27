@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { useAlerts, type AlertKind } from "../lib/alerts"
+import { pageContainer } from "../lib/ui"
 
 const KIND_STYLE: Record<AlertKind, string> = {
   "missing-grade": "text-amber-300",
@@ -23,9 +24,9 @@ export default function AlertBar() {
   const hasFailure = alerts.some((a) => a.kind === "failed")
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pt-4">
+    <div className={`${pageContainer} relative z-10 pt-4`}>
       <div
-        className={`glass rounded-2xl border ${
+        className={`glass rounded-[var(--radius-card)] border ${
           hasFailure ? "border-red-500/30" : "border-amber-500/25"
         }`}
       >
@@ -36,10 +37,10 @@ export default function AlertBar() {
           className="flex w-full items-center gap-3 px-4 py-2.5 text-left"
         >
           <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${hasFailure ? "bg-red-500" : "bg-amber-400"}`} />
-          <span className="text-sm font-semibold text-white">
+          <span className="text-sm font-medium text-bone">
             {alerts.length} thing{alerts.length === 1 ? "" : "s"} need your attention
           </span>
-          <span className="ml-auto text-xs text-zinc-500">{open ? "Hide" : "Show"}</span>
+          <span className="ml-auto text-xs text-fog">{open ? "Hide" : "Show"}</span>
         </button>
 
         {open && (
@@ -53,9 +54,9 @@ export default function AlertBar() {
                   <span className={`h-2 w-2 flex-shrink-0 rounded-full ${KIND_DOT[a.kind]}`} />
                   <span className="min-w-0">
                     <span className={`text-sm font-medium ${KIND_STYLE[a.kind]}`}>{a.title}</span>
-                    <span className="ml-2 text-sm text-zinc-400">{a.detail}</span>
+                    <span className="ml-2 text-sm text-fog">{a.detail}</span>
                   </span>
-                  <span className="ml-auto flex-shrink-0 text-xs text-zinc-600">Fix →</span>
+                  <span className="ml-auto flex-shrink-0 text-xs text-ash">Fix →</span>
                 </Link>
               </li>
             ))}

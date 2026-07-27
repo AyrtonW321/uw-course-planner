@@ -22,8 +22,8 @@ const CoopPage = lazy(() => import("./pages/planner/coop"))
 
 function PageFallback() {
   return (
-    <div className="app-bg flex min-h-screen items-center justify-center text-zinc-400">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-yellow-400" />
+    <div className="flex min-h-screen items-center justify-center bg-void text-fog">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/[0.1] border-t-gold" />
     </div>
   )
 }
